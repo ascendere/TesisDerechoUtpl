@@ -10,7 +10,7 @@
   <!-- Botón para agregar nueva evidencia -->
   <div class="botones-flujo">
     <button *ngIf="usuarioLoggeado?.role === 'director' || usuarioLoggeado?.role === 'estudiante'"
-            (click)="openReunionDialog()">Reunión +</button>
+      (click)="openReunionDialog()">Reunión +</button>
 
     <button (click)="openAddDialog()">Agregar +</button>
 
@@ -42,26 +42,26 @@
   <h3 class="titulo-tabla">Evidencias</h3>
   <table>
     <thead>
-    <tr>
-      <th>Periodo</th>
-      <th>Bimestre</th>
-      <th>Fecha de Registro</th>
-      <th>Descripción</th>
-      <th>Evidencia</th>
-      <th>Comentario</th>
-      <th>Usuario</th>
-    </tr>
+      <tr>
+        <th>Periodo</th>
+        <th>Bimestre</th>
+        <th>Fecha de Registro</th>
+        <th>Descripción</th>
+        <th>Evidencia</th>
+        <th>Comentario</th>
+        <th>Usuario</th>
+      </tr>
     </thead>
     <tbody>
-    <tr *ngFor="let evidencia of evidencias">
-      <td>{{ evidencia.periodo }}</td>
-      <td>{{ evidencia.bimestre }}</td>
-      <td>{{ evidencia.fechaRegistro | date }}</td>
-      <td>{{ evidencia.descripcion }}</td>
-      <td><a [href]="evidencia.evidenciaUrl" target="_blank">Ver archivo</a></td>
-      <td>{{ evidencia.comentario }}</td>
-      <td>{{ evidencia.usuarioNombre }} {{ evidencia.usuarioApellido }}</td>
-    </tr>
+      <tr *ngFor="let evidencia of evidencias">
+        <td>{{ evidencia.periodo }}</td>
+        <td>{{ evidencia.bimestre }}</td>
+        <td>{{ evidencia.fechaRegistro | date }}</td>
+        <td>{{ evidencia.descripcion }}</td>
+        <td><a [href]="evidencia.evidenciaUrl" target="_blank">Ver archivo</a></td>
+        <td>{{ evidencia.comentario }}</td>
+        <td>{{ evidencia.usuarioNombre }} {{ evidencia.usuarioApellido }}</td>
+      </tr>
     </tbody>
   </table>
 
@@ -122,21 +122,22 @@
               <input type="file" id="fileUpload" (change)="onFileSelected($event)" required>
               <label for="fileUpload" class="custom-file-upload">
                 <img src="assets/img/upload-icon.svg" alt="Upload Icon" />
-                Adjunta tu documento aquí
+                {{documento ? 'Archivo cargado' : 'Adjunta tu documento aquí'}}
               </label>
             </div>
           </div>
           <div class="form-group">
             <label>Porcentaje de Avance:</label>
             <input type="number" [(ngModel)]="form.porcentaje" name="porcentaje"
-                   [min]="!(usuarioLoggeado) || usuarioLoggeado.role === 'estudiante' ? (ultimoPorcentajeEstudiante + 1) : (ultimoPorcentajeDirector + 1)"
-                   max="100" step="1">
+              [min]="!(usuarioLoggeado) || usuarioLoggeado.role === 'estudiante' ? (ultimoPorcentajeEstudiante + 1) : (ultimoPorcentajeDirector + 1)"
+              max="100" step="1">
           </div>
         </div>
 
         <div class="modal-buttons">
           <button type="button" class="cancel-btn" (click)="cerrarDialogo()">Cancelar</button>
-          <button type="submit" class="submit-btn">Crear</button>
+          <button [disabled]="isUploading" type="submit" class="submit-btn">{{isUploading ? 'Guardando...' :
+            'Crear'}}</button>
         </div>
       </form>
     </div>
@@ -174,23 +175,26 @@
 
           <div class="form-group">
             <label>Descripción</label>
-            <input type="text" [(ngModel)]="reunionForm.descripcion" name="descripcion" placeholder="Escribe aquí..." required>
+            <input type="text" [(ngModel)]="reunionForm.descripcion" name="descripcion" placeholder="Escribe aquí..."
+              required>
           </div>
         </div>
 
         <div class="form-group">
           <label>Adjunta evidencia (imagen o PDF) <span class="required">*</span></label>
-          <input type="file" id="fileUploadReunion" (change)="onFileSelectedReunion($event)" accept="image/*,application/pdf">
+          <input type="file" id="fileUploadReunion" (change)="onFileSelectedReunion($event)"
+            accept="image/*,application/pdf">
           <label for="fileUploadReunion" class="custom-file-upload">
             <img src="assets/img/upload-icon.svg" alt="Upload Icon" />
-            Adjunta tu documento aquí
+            {{documentoReunion ? 'Archivo cargado' : 'Adjunta tu documento aquí'}}
           </label>
         </div>
 
 
         <div class="modal-buttons">
           <button type="button" class="cancel-btn" (click)="cerrarReunionDialog()">Cancelar</button>
-          <button type="submit" class="submit-btn">Crear</button>
+          <button [disabled]="isUploading" type="submit" class="submit-btn">{{isUploading ? 'Guardando...' :
+            'Crear'}}</button>
         </div>
       </form>
     </div>
@@ -201,39 +205,38 @@
   <h3 class="titulo-tabla">Reuniones</h3>
   <table>
     <thead>
-    <tr>
-      <th>Periodo</th>
-      <th>Fecha de registro</th>
-      <th>Fecha de reunión</th>
-      <th>Descripción</th>
-      <th>Evidencia</th>
-      <th>Asistencia</th>
-      <th>Usuario</th>
-    </tr>
+      <tr>
+        <th>Periodo</th>
+        <th>Fecha de registro</th>
+        <th>Fecha de reunión</th>
+        <th>Descripción</th>
+        <th>Evidencia</th>
+        <th>Asistencia</th>
+        <th>Usuario</th>
+      </tr>
     </thead>
     <tbody>
-    <tr *ngFor="let reunion of reuniones">
-      <td>{{ reunion.periodo }}</td>
-      <td>{{ reunion.fechaRegistro | date }}</td>
-      <td>{{ reunion.fechaReunion | date }}</td>
-      <td>{{ reunion.descripcion }}</td>
-      <td>
-        <ng-container *ngIf="reunion.evidenciaUrl; else sinEvidencia">
-          <a [href]="reunion.evidenciaUrl" target="_blank">Ver archivo</a>
-        </ng-container>
-        <ng-template #sinEvidencia>Sin evidencia</ng-template>
-      </td>
-      <td>
-        <select [(ngModel)]="reunion.asistencia"
-                (change)="actualizarAsistencia(reunion)"
-                [disabled]="usuarioLoggeado?.firstName + ' ' + usuarioLoggeado?.lastName !== reunion.autor">
-          <option value="Pendiente">Pendiente</option>
-          <option value="Asistió">Asistió</option>
-          <option value="No asistió">No asistió</option>
-        </select>
-      </td>
-      <td>{{ reunion.autor }}</td>
-    </tr>
+      <tr *ngFor="let reunion of reuniones">
+        <td>{{ reunion.periodo }}</td>
+        <td>{{ reunion.fechaRegistro | date }}</td>
+        <td>{{ reunion.fechaReunion | date }}</td>
+        <td>{{ reunion.descripcion }}</td>
+        <td>
+          <ng-container *ngIf="reunion.evidenciaUrl; else sinEvidencia">
+            <a [href]="reunion.evidenciaUrl" target="_blank">Ver archivo</a>
+          </ng-container>
+          <ng-template #sinEvidencia>Sin evidencia</ng-template>
+        </td>
+        <td>
+          <select [(ngModel)]="reunion.asistencia" (change)="actualizarAsistencia(reunion)"
+            [disabled]="usuarioLoggeado?.firstName + ' ' + usuarioLoggeado?.lastName !== reunion.autor">
+            <option value="Pendiente">Pendiente</option>
+            <option value="Asistió">Asistió</option>
+            <option value="No asistió">No asistió</option>
+          </select>
+        </td>
+        <td>{{ reunion.autor }}</td>
+      </tr>
     </tbody>
   </table>
 

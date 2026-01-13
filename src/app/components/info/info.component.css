@@ -34,7 +34,6 @@
 
 /* Estilos del contenedor de selección */
 .seleccion {
-  display: flex;
   justify-content: space-between;
   margin-bottom: 20%;
   align-items: center;

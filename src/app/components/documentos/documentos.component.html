@@ -8,70 +8,72 @@
 
 <table>
   <thead>
-  <tr>
-    <th>Ingreso documento digital</th>
-    <th>Descripción de Documento</th>
-    <th>Fecha de ingreso</th>
-    <th>Fecha de validación</th>
-    <th>Observaciones</th>
-    <th>Docente</th>
-    <th>Director</th>
-    <th>Secretario</th>
-  </tr>
+    <tr>
+      <th>Ingreso documento digital</th>
+      <th>Descripción de Documento</th>
+      <th>Fecha de ingreso</th>
+      <th>Fecha de validación</th>
+      <th>Observaciones</th>
+      <th>Docente</th>
+      <th>Director</th>
+      <th>Secretario</th>
+    </tr>
   </thead>
   <tbody>
-  <tr *ngFor="let doc of documents">
-    <td><a [href]="doc.link" target="_blank">Ver documento</a></td>
-    <td>{{ doc.descripcion }}</td>
-    <td>{{ doc.fechaIngreso }}</td>
-    <td>
-      <span *ngIf="role !== 'director'">{{ doc.fechaValidacion || '-' }}</span>
-      <input *ngIf="role === 'director'" type="date" [(ngModel)]="doc.fechaValidacionActual">
-    </td>
-    <td>
-      <span *ngIf="role !== 'director'">{{ doc.observaciones || 'Ninguna' }}</span>
-      <input *ngIf="role === 'director'" type="text" [(ngModel)]="doc.observacionesActual" placeholder="Agregar observación">
-    </td>
-    <td>
-      <span *ngIf="role !== 'docente'" [ngClass]="getStatusClass(doc.docente)">{{ doc.docente }}</span>
-      <select *ngIf="role === 'docente'" [(ngModel)]="doc.estadoActual" [ngClass]="getStatusClass(doc.estadoActual)">
-        <option value="Aprobado">Aprobado</option>
-        <option value="Rechazado">Rechazado</option>
-      </select>
-    </td>
-    <td>
-      <span *ngIf="role !== 'director'" [ngClass]="getStatusClass(doc.director)">{{ doc.director }}</span>
-      <select *ngIf="role === 'director'" [(ngModel)]="doc.estadoActual" [ngClass]="getStatusClass(doc.estadoActual)">
-        <option value="Aprobado">Aprobado</option>
-        <option value="Rechazado">Rechazado</option>
-      </select>
-    </td>
-    <td>
-      <span *ngIf="role !== 'secretario'" [ngClass]="getStatusClass(doc.secretario)">{{ doc.secretario }}</span>
-      <select *ngIf="role === 'secretario'" [(ngModel)]="doc.estadoActual" [ngClass]="getStatusClass(doc.estadoActual)">
-        <option value="Aprobado">Aprobado</option>
-        <option value="Rechazado">Rechazado</option>
-      </select>
-    </td>
+    <tr *ngFor="let doc of documents">
+      <td><a [href]="doc.link" target="_blank">Ver documento</a></td>
+      <td>{{ doc.descripcion }}</td>
+      <td>{{ doc.fechaIngreso }}</td>
+      <td>
+        <span *ngIf="role !== 'director'">{{ doc.fechaValidacion || '-' }}</span>
+        <input *ngIf="role === 'director'" type="date" [(ngModel)]="doc.fechaValidacionActual">
+      </td>
+      <td>
+        <span *ngIf="role !== 'director'">{{ doc.observaciones || 'Ninguna' }}</span>
+        <input *ngIf="role === 'director'" type="text" [(ngModel)]="doc.observacionesActual"
+          placeholder="Agregar observación">
+      </td>
+      <td>
+        <span *ngIf="role !== 'docente'" [ngClass]="getStatusClass(doc.docente)">{{ doc.docente }}</span>
+        <select *ngIf="role === 'docente'" [(ngModel)]="doc.estadoActual" [ngClass]="getStatusClass(doc.estadoActual)">
+          <option value="Aprobado">Aprobado</option>
+          <option value="Rechazado">Rechazado</option>
+        </select>
+      </td>
+      <td>
+        <span *ngIf="role !== 'director'" [ngClass]="getStatusClass(doc.director)">{{ doc.director }}</span>
+        <select *ngIf="role === 'director'" [(ngModel)]="doc.estadoActual" [ngClass]="getStatusClass(doc.estadoActual)">
+          <option value="Aprobado">Aprobado</option>
+          <option value="Rechazado">Rechazado</option>
+        </select>
+      </td>
+      <td>
+        <span *ngIf="role !== 'secretario'" [ngClass]="getStatusClass(doc.secretario)">{{ doc.secretario }}</span>
+        <select *ngIf="role === 'secretario'" [(ngModel)]="doc.estadoActual"
+          [ngClass]="getStatusClass(doc.estadoActual)">
+          <option value="Aprobado">Aprobado</option>
+          <option value="Rechazado">Rechazado</option>
+        </select>
+      </td>
 
-  </tr>
+    </tr>
 
-  <tr *ngIf="addingDocument">
-    <td>
-      <input id="archivo" type="file" (change)="onFileSelected($event)" />
-      <label for="archivo" class="custom-file-upload">
-        <img src="assets/img/upload-icon.svg" alt="Upload Icon" />
-        {{ archivoCargado ? 'Archivo cargado' : 'Adjunta tu documento aquí' }}
-      </label>
-    </td>
-    <td><input placeholder="Descripción" type="text" [(ngModel)]="newDocument.descripcion" /></td>
-    <td><input type="date" [(ngModel)]="newDocument.fechaIngreso" /></td>
-    <td>-</td>
-    <td>-</td>
-    <td>-</td>
-    <td>-</td>
-    <td>-</td>
-  </tr>
+    <tr *ngIf="addingDocument">
+      <td>
+        <input id="archivo" type="file" (change)="onFileSelected($event)" />
+        <label for="archivo" class="custom-file-upload">
+          <img src="assets/img/upload-icon.svg" alt="Upload Icon" />
+          {{ archivoCargado ? 'Archivo cargado' : 'Adjunta tu documento aquí' }}
+        </label>
+      </td>
+      <td><input placeholder="Descripción" type="text" [(ngModel)]="newDocument.descripcion" /></td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+    </tr>
   </tbody>
 </table>
 
@@ -79,13 +81,14 @@
   <button *ngIf="!addingDocument" (click)="addDocument()">Agregar +</button>
 
 
-  <button *ngIf="addingDocument" (click)="confirmDocument()">Guardar</button>
+  <button [disabled]="isUploading" *ngIf="addingDocument" (click)="confirmDocument()">{{isUploading ? 'Cargando...' :
+    'Guardar'}}</button>
 
   <button *ngIf="!addingDocument" (click)="printDocument()">Imprimir</button>
 </div>
 
-<div class="btns" *ngIf="role !== 'estudiante'" >
-  <button  (click)="updateDocumentStates()">Guardar Cambios</button>
+<div class="btns" *ngIf="role !== 'estudiante'">
+  <button (click)="updateDocumentStates()">Guardar Cambios</button>
 </div>
 
 

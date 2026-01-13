@@ -4,109 +4,116 @@ import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { LoginService } from '../../services/login.service'; // Importa el LoginService
 import User from '../../interfaces/user.interface';
 import { Observable } from 'rxjs';
-import {ActivatedRoute} from "@angular/router";
-import {AlertaService} from "../../services/alert.service";
+import { ActivatedRoute } from '@angular/router';
+import { AlertaService } from '../../services/alert.service';
 
 @Component({
   selector: 'app-flujo',
   templateUrl: './flujo.component.html',
-  styleUrls: ['./flujo.component.css']
+  styleUrls: ['./flujo.component.css'],
 })
 export class FlujoComponent implements OnInit {
-  evidencias: any[] = [];  // Lista de evidencias que se mostrarán en la tabla
-  mostrarDialogoAgregar: boolean = false;  // Controla la visualización del modal
-  usuarioLoggeado: User | null = null;  // Información del usuario loggeado
-  form: any = {};  // Formulario para agregar evidencias
-  documento: File | null = null;  // Archivo seleccionado para subir
-  mostrarDialogoReunion: boolean = false;  // Controla el modal de reuniones
-  reunionForm: any = {};  // Formulario para la reunión
+  evidencias: any[] = []; // Lista de evidencias que se mostrarán en la tabla
+  mostrarDialogoAgregar: boolean = false; // Controla la visualización del modal
+  usuarioLoggeado: User | null = null; // Información del usuario loggeado
+  form: any = {}; // Formulario para agregar evidencias
+  documento: File | null = null; // Archivo seleccionado para subir
+  mostrarDialogoReunion: boolean = false; // Controla el modal de reuniones
+  reunionForm: any = {}; // Formulario para la reunión
   reuniones: any[] = []; // ← Agregar esta línea
   fechaRegistroReunion: string | null = null;
-  documentoReunion: File | null = null;  // Archivo seleccionado para la reunión
+  documentoReunion: File | null = null; // Archivo seleccionado para la reunión
   ultimoPorcentajeEstudiante: number = 0;
   ultimoPorcentajeDirector: number = 0;
 
-
-
   tesisId: string | null = null;
+
+  isUploading: boolean = false;
   constructor(
     private firestore: AngularFirestore,
     private storage: AngularFireStorage,
     private loginService: LoginService,
-    private route: ActivatedRoute,// Inyecta el LoginService
+    private route: ActivatedRoute, // Inyecta el LoginService
     private alertaService: AlertaService
   ) {}
 
   ngOnInit(): void {
-
-    this.route.queryParams.subscribe(params => {
+    this.route.queryParams.subscribe((params) => {
       this.tesisId = params['tesisId'];
       console.log('Tesis ID:', this.tesisId);
 
-      if (this.tesisId) {  // Verificación para evitar el uso de null
+      if (this.tesisId) {
+        // Verificación para evitar el uso de null
         // Obtener el usuario loggeado al inicializar el componente
-        this.loginService.getCurrentUser().subscribe(user => {
+        this.loginService.getCurrentUser().subscribe((user) => {
           if (user) {
-            this.usuarioLoggeado = user;  // Almacena los datos del usuario loggeado
-            this.cargarEvidencias();  // Cargar evidencias relacionadas al usuario
+            this.usuarioLoggeado = user; // Almacena los datos del usuario loggeado
+            this.cargarEvidencias(); // Cargar evidencias relacionadas al usuario
             this.cargarReuniones();
           } else {
-            console.log("No hay usuario loggeado.");
+            console.log('No hay usuario loggeado.');
           }
         });
       } else {
         console.error('No se encontró el ID de la tesis.');
       }
     });
-
-
   }
 
   cargarEvidencias() {
     if (this.usuarioLoggeado && this.tesisId) {
-      this.firestore.collection('tesis').doc(this.tesisId)
+      this.firestore
+        .collection('tesis')
+        .doc(this.tesisId)
         .collection('flujo')
         .valueChanges()
-        .subscribe((data: any[]) => {
-          this.evidencias = data;
-          console.log("Evidencias cargadas:", this.evidencias);
-          this.obtenerUltimosPorcentajes(); // Asegurar que se recalculan los porcentajes
-        }, error => console.error('Error al cargar evidencias:', error));
+        .subscribe(
+          (data: any[]) => {
+            this.evidencias = data;
+            console.log('Evidencias cargadas:', this.evidencias);
+            this.obtenerUltimosPorcentajes(); // Asegurar que se recalculan los porcentajes
+          },
+          (error) => console.error('Error al cargar evidencias:', error)
+        );
     }
   }
 
-
   obtenerUltimosPorcentajes() {
     if (!this.evidencias || this.evidencias.length === 0) {
-      console.log("⚠️ No hay evidencias registradas.");
+      console.log('⚠️ No hay evidencias registradas.');
       this.ultimoPorcentajeEstudiante = 0;
       this.ultimoPorcentajeDirector = 0;
       return;
     }
 
-    console.log("🔎 Filtrando evidencias...");
+    console.log('🔎 Filtrando evidencias...');
 
     // Filtrar evidencias de estudiantes
-    const evidenciasEstudiante = this.evidencias.filter(e => e.rol === 'estudiante' && e.porcentaje != null);
+    const evidenciasEstudiante = this.evidencias.filter(
+      (e) => e.rol === 'estudiante' && e.porcentaje != null
+    );
     this.ultimoPorcentajeEstudiante = evidenciasEstudiante.length
-      ? Math.max(...evidenciasEstudiante.map(e => Number(e.porcentaje) || 0))
+      ? Math.max(...evidenciasEstudiante.map((e) => Number(e.porcentaje) || 0))
       : 0;
 
-    console.log("🎓 Último porcentaje estudiante:", this.ultimoPorcentajeEstudiante);
+    console.log(
+      '🎓 Último porcentaje estudiante:',
+      this.ultimoPorcentajeEstudiante
+    );
 
     // Filtrar evidencias de directores
-    const evidenciasDirector = this.evidencias.filter(e => e.rol === 'director' && e.porcentaje != null);
+    const evidenciasDirector = this.evidencias.filter(
+      (e) => e.rol === 'director' && e.porcentaje != null
+    );
     this.ultimoPorcentajeDirector = evidenciasDirector.length
-      ? Math.max(...evidenciasDirector.map(e => Number(e.porcentaje) || 0))
+      ? Math.max(...evidenciasDirector.map((e) => Number(e.porcentaje) || 0))
       : 0;
 
-    console.log("📋 Último porcentaje director:", this.ultimoPorcentajeDirector);
+    console.log(
+      '📋 Último porcentaje director:',
+      this.ultimoPorcentajeDirector
+    );
   }
-
-
-
-
-
 
   // Abre el modal para agregar nueva evidencia
   openAddDialog() {
@@ -117,19 +124,19 @@ export class FlujoComponent implements OnInit {
   // Cierra el modal sin guardar datos
   cerrarDialogo() {
     this.mostrarDialogoAgregar = false;
-    this.form = {};  // Resetea el formulario
-    this.documento = null;  // Resetea el archivo
+    this.form = {}; // Resetea el formulario
+    this.documento = null; // Resetea el archivo
   }
 
   // Captura el archivo seleccionado
   onFileSelected(event: any) {
     this.documento = event.target.files[0];
-    console.log('Archivo seleccionado:', this.documento);
+    console.log('Archivo seleccionado exitosamente:', this.documento);
   }
-
 
   // Método para enviar el formulario de agregar nueva evidencia
   submit() {
+    if (this.isUploading) return; // Evita múltiples envíos simultáneos
     if (!this.documento || !this.tesisId || !this.usuarioLoggeado) {
       this.alertaService.mostrarAlerta(
         'error',
@@ -138,7 +145,12 @@ export class FlujoComponent implements OnInit {
       );
       return;
     }
-    if (!this.form.fechaRegistro || !this.form.descripcion || !this.form.bimestre || this.form.porcentaje == null) {
+    if (
+      !this.form.fechaRegistro ||
+      !this.form.descripcion ||
+      !this.form.bimestre ||
+      this.form.porcentaje == null
+    ) {
       this.alertaService.mostrarAlerta(
         'error',
         'Campos incompletos',
@@ -146,11 +158,16 @@ export class FlujoComponent implements OnInit {
       );
       return;
     }
+    this.isUploading = true;
 
     const esEstudiante = this.usuarioLoggeado.role === 'estudiante';
     const esDirector = this.usuarioLoggeado.role === 'director';
 
-    if (esEstudiante && this.form.porcentaje <= this.ultimoPorcentajeEstudiante) {
+    if (
+      esEstudiante &&
+      this.form.porcentaje <= this.ultimoPorcentajeEstudiante
+    ) {
+      this.isUploading = false;
       this.alertaService.mostrarAlerta(
         'error',
         `El porcentaje debe ser mayor a ${this.ultimoPorcentajeEstudiante}%`,
@@ -160,6 +177,7 @@ export class FlujoComponent implements OnInit {
     }
 
     if (esDirector && this.form.porcentaje <= this.ultimoPorcentajeDirector) {
+      this.isUploading = false;
       this.alertaService.mostrarAlerta(
         'error',
         'Porcentaje insuficiente',
@@ -187,10 +205,12 @@ export class FlujoComponent implements OnInit {
               usuarioApellido: this.usuarioLoggeado?.lastName,
               usuarioId: this.usuarioLoggeado?.id,
               comentario: this.form.comentario,
-              rol: this.usuarioLoggeado?.role
+              rol: this.usuarioLoggeado?.role,
             };
 
-            this.firestore.collection('tesis').doc(this.tesisId!)
+            this.firestore
+              .collection('tesis')
+              .doc(this.tesisId!)
               .collection('flujo')
               .add(nuevaEvidencia)
               .then(() => {
@@ -201,8 +221,11 @@ export class FlujoComponent implements OnInit {
                 );
                 this.cerrarDialogo();
                 this.cargarEvidencias();
+
+                this.isUploading = false;
               })
-              .catch(error => {
+              .catch((error) => {
+                this.isUploading = false;
                 this.alertaService.mostrarAlerta(
                   'error',
                   'Error al guardar',
@@ -212,16 +235,18 @@ export class FlujoComponent implements OnInit {
               });
           },
           error: (err) => {
+            this.isUploading = false;
             this.alertaService.mostrarAlerta(
               'error',
               'Error al obtener URL del archivo',
               'Hubo un problema al obtener el enlace del documento subido.'
             );
             console.error('Error al obtener downloadURL:', err);
-          }
+          },
         });
       })
-      .catch(error => {
+      .catch((error) => {
+        this.isUploading = false;
         this.alertaService.mostrarAlerta(
           'error',
           'Error al subir archivo',
@@ -230,7 +255,6 @@ export class FlujoComponent implements OnInit {
         console.error('Error al subir archivo:', error);
       });
   }
-
 
   // Abrir el modal de reuniones y asignar la fecha de registro actual
   openReunionDialog() {
@@ -245,22 +269,31 @@ export class FlujoComponent implements OnInit {
 
   cargarReuniones() {
     if (this.tesisId) {
-      this.firestore.collection('tesis').doc(this.tesisId).collection('reuniones')
+      this.firestore
+        .collection('tesis')
+        .doc(this.tesisId)
+        .collection('reuniones')
         .valueChanges({ idField: 'id' }) // Agregar el ID de Firestore
-        .subscribe((data: any[]) => {
-          this.reuniones = data;
-        }, error => {
-          this.alertaService.mostrarAlerta(
-            'error',
-            'Error al cargar reuniones',
-            'Ocurrió un problema al intentar obtener las reuniones.'
-          );
-        });
+        .subscribe(
+          (data: any[]) => {
+            this.reuniones = data;
+          },
+          (error) => {
+            this.alertaService.mostrarAlerta(
+              'error',
+              'Error al cargar reuniones',
+              'Ocurrió un problema al intentar obtener las reuniones.'
+            );
+          }
+        );
     }
   }
 
   actualizarAsistencia(reunion: any) {
-    if (this.usuarioLoggeado?.firstName + ' ' + this.usuarioLoggeado?.lastName !== reunion.autor) {
+    if (
+      this.usuarioLoggeado?.firstName + ' ' + this.usuarioLoggeado?.lastName !==
+      reunion.autor
+    ) {
       this.alertaService.mostrarAlerta(
         'info',
         'Permiso denegado',
@@ -269,27 +302,36 @@ export class FlujoComponent implements OnInit {
       return;
     }
 
-    this.firestore.collection('tesis').doc(this.tesisId!)
-      .collection('reuniones').doc(reunion.id)
+    this.firestore
+      .collection('tesis')
+      .doc(this.tesisId!)
+      .collection('reuniones')
+      .doc(reunion.id)
       .update({ asistencia: reunion.asistencia })
       .then(() => console.log('✅ Asistencia actualizada'))
-      .catch(error => this.alertaService.mostrarAlerta(
-        'error',
-        'Error al actualizar asistencia',
-        'No se pudo guardar la asistencia. Intenta nuevamente.'
-      ));
+      .catch((error) =>
+        this.alertaService.mostrarAlerta(
+          'error',
+          'Error al actualizar asistencia',
+          'No se pudo guardar la asistencia. Intenta nuevamente.'
+        )
+      );
   }
 
   onFileSelectedReunion(event: any) {
     this.documentoReunion = event.target.files[0];
-    console.log('Archivo de reunión seleccionado:', this.documentoReunion);
+    console.log(
+      'Archivo de reunión seleccionado exitosamente:',
+      this.documentoReunion
+    );
   }
-
-
 
   // Método para enviar el formulario de reunión
   submitReunion() {
+    if (this.isUploading) return; // Evita múltiples envíos simultáneos
+    this.isUploading = true;
     if (!this.tesisId) {
+      this.isUploading = false;
       this.alertaService.mostrarAlerta(
         'error',
         'ID de tesis no encontrado',
@@ -298,6 +340,7 @@ export class FlujoComponent implements OnInit {
       return;
     }
     if (!this.usuarioLoggeado) {
+      this.isUploading = false;
       this.alertaService.mostrarAlerta(
         'error',
         'Sesión no iniciada',
@@ -306,6 +349,7 @@ export class FlujoComponent implements OnInit {
       return;
     }
     if (!this.reunionForm.descripcion || !this.reunionForm.fechaReunion) {
+      this.isUploading = false;
       this.alertaService.mostrarAlerta(
         'error',
         'Campos incompletos',
@@ -321,7 +365,7 @@ export class FlujoComponent implements OnInit {
       descripcion: this.reunionForm.descripcion,
       asistencia: 'Pendiente',
       autor: `${this.usuarioLoggeado.firstName} ${this.usuarioLoggeado.lastName}`,
-      evidenciaUrl: ''  // Inicialmente vacío
+      evidenciaUrl: '', // Inicialmente vacío
     };
 
     if (this.documentoReunion) {
@@ -329,36 +373,46 @@ export class FlujoComponent implements OnInit {
       const fileRef = this.storage.ref(filePath);
       const uploadTask = this.storage.upload(filePath, this.documentoReunion);
 
-      uploadTask.then(() => {
-        fileRef.getDownloadURL().subscribe((downloadUrl) => {
-          nuevaReunion.evidenciaUrl = downloadUrl;
+      uploadTask
+        .then(() => {
+          fileRef.getDownloadURL().subscribe((downloadUrl) => {
+            nuevaReunion.evidenciaUrl = downloadUrl;
 
-          this.firestore.collection('tesis').doc(this.tesisId!)
-            .collection('reuniones')
-            .add(nuevaReunion)
-            .then(() => {
-              this.alertaService.mostrarAlerta(
-                'exito',
-                'Reunión guardada',
-                'La reunión fue registrada correctamente junto con la evidencia.'
+            this.firestore
+              .collection('tesis')
+              .doc(this.tesisId!)
+              .collection('reuniones')
+              .add(nuevaReunion)
+              .then(() => {
+                this.alertaService.mostrarAlerta(
+                  'exito',
+                  'Reunión guardada',
+                  'La reunión fue registrada correctamente junto con la evidencia.'
+                );
+                this.cerrarReunionDialog();
+                this.isUploading = false;
+                this.cargarReuniones();
+              })
+              .catch((error) =>
+                this.alertaService.mostrarAlerta(
+                  'error',
+                  'Error al guardar la reunión',
+                  'No se pudo guardar la información de la reunión.' + error
+                )
               );
-              this.cerrarReunionDialog();
-              this.cargarReuniones();
-            })
-            .catch(error => this.alertaService.mostrarAlerta(
-              'error',
-              'Error al guardar la reunión',
-              'No se pudo guardar la información de la reunión.' + error
-            ));
-        });
-      }).catch(error =>
-        this.alertaService.mostrarAlerta(
-          'error',
-          'Error al subir archivo',
-          'No se pudo subir el archivo. Intenta nuevamente.' + error
-        ));
+          });
+        })
+        .catch((error) =>
+          this.alertaService.mostrarAlerta(
+            'error',
+            'Error al subir archivo',
+            'No se pudo subir el archivo. Intenta nuevamente.' + error
+          )
+        );
     } else {
-      this.firestore.collection('tesis').doc(this.tesisId!)
+      this.firestore
+        .collection('tesis')
+        .doc(this.tesisId!)
         .collection('reuniones')
         .add(nuevaReunion)
         .then(() => {
@@ -369,13 +423,15 @@ export class FlujoComponent implements OnInit {
           );
           this.cerrarReunionDialog();
           this.cargarReuniones();
+          this.isUploading = false;
         })
-        .catch(error => this.alertaService.mostrarAlerta(
-          'error',
-          'Error al guardar la reunión',
-          'Ocurrió un problema al guardar la información. Intenta más tarde.'
-        ));
+        .catch((error) =>
+          this.alertaService.mostrarAlerta(
+            'error',
+            'Error al guardar la reunión',
+            'Ocurrió un problema al guardar la información. Intenta más tarde.'
+          )
+        );
     }
   }
-
 }

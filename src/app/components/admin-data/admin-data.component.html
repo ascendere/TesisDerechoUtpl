@@ -10,13 +10,30 @@
   <div class="recuadro">
     <h3>Docente de la asignatura</h3>
     <p>Fecha: {{ recuadros.docente.fechaEnvio ? recuadros.docente.fechaEnvio : currentDate }}</p>
-    <input type="email" [(ngModel)]="recuadros.docente.correo" placeholder="Correo del docente" />
-    <label  for="archivo" class="custom-file-upload">
+    <input [disabled]="!esSecretario" type="email" [(ngModel)]="recuadros.docente.correo"
+      placeholder="Correo del docente" />
+    <label *ngIf="esSecretario" for="archivoDocente" class="custom-file-upload">
       <img src="assets/img/upload-icon.svg" alt="Upload Icon" />
       Adjunta tu documento aquí
     </label>
-    <input id="archivo" type="file" (change)="onFileSelected($event, recuadros.docente)" accept="application/pdf" />
-    <button [disabled]="!esSecretario || recuadros.docente.fechaEnvio" (click)="sendEmail(recuadros.docente)">
+    <input id="archivoDocente" type="file" (change)="onFileSelected($event, recuadros.docente)" accept="application/pdf"
+      hidden />
+
+    <div *ngIf="!esSecretario && !recuadros.docente.pdfFile" class="recuadro-pendiente">
+      <div class="custom-file-upload-disabled">
+        <img src="assets/img/pending-icon.svg" alt="Wait Icon" class="icon-wait" />
+        <span>Pendiente de carga</span>
+      </div>
+    </div>
+
+    <div *ngIf="recuadros.docente.pdfFile" class="download-container">
+      <a [href]="recuadros.docente.pdfFile" target="_blank" class="custom-file-upload download-style">
+        <img src="assets/img/download-icon.svg" alt="Descargar" />
+        <span>Ver / Descargar Expediente</span>
+      </a>
+    </div>
+
+    <button *ngIf="esSecretario && !recuadros.docente.fechaEnvio" (click)="sendEmail(recuadros.docente)">
       {{ recuadros.docente.fechaEnvio ? 'Enviado' : 'Enviar' }}
     </button>
   </div>
@@ -25,14 +42,35 @@
   <div class="recuadro">
     <h3>Notificación al director</h3>
     <p>Fecha: {{ recuadros.director.fechaEnvio ? recuadros.director.fechaEnvio : currentDate }}</p>
-    <input type="email" [(ngModel)]="recuadros.director.correo" placeholder="Correo del director" />
-    <label  for="archivo" class="custom-file-upload">
+    <select *ngIf="esSecretario" [(ngModel)]="selectedDirector" (change)="onManualAssignmentChange('director')">
+      <option *ngFor="let prof of directorsList" [ngValue]="prof">
+        {{prof.email }}
+      </option>
+    </select>
+    <p *ngIf="!esSecretario">{{ selectedDirector?.email }}</p>
+    <label *ngIf="esSecretario" for="archivoNotificacionDirector" class="custom-file-upload">
       <img src="assets/img/upload-icon.svg" alt="Upload Icon" />
       Adjunta tu documento aquí
     </label>
-    <input id="archivo" type="file" (change)="onFileSelected($event, recuadros.director)" accept="application/pdf" />
-    <button [disabled]="!avanceDirectorAlCien || !esSecretario || recuadros.director.fechaEnvio"
-            (click)="sendEmail(recuadros.director)">
+    <input id="archivoNotificacionDirector" type="file" (change)="onFileSelected($event, recuadros.director)"
+      accept="application/pdf" hidden />
+    <div *ngIf="!esSecretario && !recuadros.director.pdfFile" class="recuadro-pendiente">
+      <div class="custom-file-upload-disabled">
+        <img src="assets/img/pending-icon.svg" alt="Wait Icon" class="icon-wait" />
+        <span>Pendiente de carga</span>
+      </div>
+    </div>
+
+    <div *ngIf="recuadros.director.pdfFile" class="download-container">
+      <a [href]="recuadros.director.pdfFile" target="_blank" class="custom-file-upload download-style">
+        <img src="assets/img/download-icon.svg" alt="Descargar" />
+        <span>Ver / Descargar Expediente</span>
+      </a>
+    </div>
+
+
+    <button *ngIf="avanceDirectorAlCien && esSecretario && !recuadros.director.fechaEnvio"
+      (click)="sendEmail(recuadros.director)">
       {{ recuadros.director.fechaEnvio ? 'Enviado' : 'Enviar' }}
     </button>
   </div>
@@ -41,14 +79,33 @@
   <div class="recuadro">
     <h3>Notificación al equipo evaluador</h3>
     <p>Fecha: {{ recuadros.equipoEvaluador.fechaEnvio ? recuadros.equipoEvaluador.fechaEnvio : currentDate }}</p>
-    <input type="email" [(ngModel)]="recuadros.equipoEvaluador.correo" placeholder="Correo del equipo evaluador" />
-    <label  for="archivo" class="custom-file-upload">
+    <select *ngIf="esSecretario" [(ngModel)]="selectedEvaluator" (change)="onManualAssignmentChange('evaluador')">
+      <option *ngFor="let prof of evaluatorsList" [ngValue]="prof">
+        {{ prof.email }}
+      </option>
+    </select>
+    <p *ngIf="!esSecretario">{{ selectedEvaluator?.email}} </p>
+    <label *ngIf="esSecretario" for="archivoNotificacionEvaluador" class="custom-file-upload">
       <img src="assets/img/upload-icon.svg" alt="Upload Icon" />
       Adjunta tu documento aquí
     </label>
-    <input id="archivo" type="file" (change)="onFileSelected($event, recuadros.equipoEvaluador)" accept="application/pdf" />
-    <button [disabled]="!esSecretario || recuadros.equipoEvaluador.fechaEnvio"
-            (click)="sendEmail(recuadros.equipoEvaluador)">
+    <input id="archivoNotificacionEvaluador" type="file" (change)="onFileSelected($event, recuadros.equipoEvaluador)"
+      accept="application/pdf" hidden />
+    <div *ngIf="!esSecretario && !recuadros.equipoEvaluador.pdfFile" class="recuadro-pendiente">
+      <div class="custom-file-upload-disabled">
+        <img src="assets/img/pending-icon.svg" alt="Wait Icon" class="icon-wait" />
+        <span>Pendiente de carga</span>
+      </div>
+    </div>
+
+    <div *ngIf="recuadros.equipoEvaluador.pdfFile" class="download-container">
+      <a [href]="recuadros.equipoEvaluador.pdfFile" target="_blank" class="custom-file-upload download-style">
+        <img src="assets/img/download-icon.svg" alt="Descargar" />
+        <span>Ver / Descargar Expediente</span>
+      </a>
+    </div>
+    <button *ngIf="esSecretario && !recuadros.equipoEvaluador.fechaEnvio"
+      (click)="sendEmail(recuadros.equipoEvaluador)">
       {{ recuadros.equipoEvaluador.fechaEnvio ? 'Enviado' : 'Enviar' }}
     </button>
   </div>
@@ -58,13 +115,28 @@
     <h3>Aprobación del trabajo de titulación del director</h3>
     <p>Fecha: {{ recuadros.aprobacionDirector.fechaEnvio ? recuadros.aprobacionDirector.fechaEnvio : currentDate }}</p>
     <p>Nombre del director: {{ directorName }}</p>
-    <label  for="archivo" class="custom-file-upload">
+    <label *ngIf="esSecretario" for="archivoAprobacionDirector" class="custom-file-upload">
       <img src="assets/img/upload-icon.svg" alt="Upload Icon" />
       Adjunta tu documento aquí
     </label>
-    <input id="archivo" type="file" (change)="onFileSelected($event, recuadros.aprobacionDirector)" accept="application/pdf" />
-    <button [disabled]="!esSecretario || recuadros.aprobacionDirector.fechaEnvio"
-            (click)="sendEmail(recuadros.aprobacionDirector)">
+    <input id="archivoAprobacionDirector" type="file" (change)="onFileSelected($event, recuadros.aprobacionDirector)"
+      accept="application/pdf" hidden />
+
+    <div *ngIf="!esSecretario && !recuadros.aprobacionDirector.pdfFile" class="recuadro-pendiente">
+      <div class="custom-file-upload-disabled">
+        <img src="assets/img/pending-icon.svg" alt="Wait Icon" class="icon-wait" />
+        <span>Pendiente de carga</span>
+      </div>
+    </div>
+
+    <div *ngIf="recuadros.aprobacionDirector.pdfFile" class="download-container">
+      <a [href]="recuadros.aprobacionDirector.pdfFile" target="_blank" class="custom-file-upload download-style">
+        <img src="assets/img/download-icon.svg" alt="Descargar" />
+        <span>Ver / Descargar Expediente</span>
+      </a>
+    </div>
+    <button *ngIf="esSecretario && !recuadros.aprobacionDirector.fechaEnvio"
+      (click)="sendEmail(recuadros.aprobacionDirector)">
       {{ recuadros.aprobacionDirector.fechaEnvio ? 'Enviado' : 'Enviar' }}
     </button>
   </div>
@@ -73,14 +145,30 @@
   <div class="recuadro">
     <h3>Aprobación del trabajo de titulación del equipo evaluador</h3>
     <p>Fecha: {{ recuadros.aprobacionEquipo.fechaEnvio ? recuadros.aprobacionEquipo.fechaEnvio : currentDate }}</p>
-    <input type="email" [(ngModel)]="recuadros.aprobacionEquipo.correo" placeholder="Correo del equipo evaluador" />
-    <label  for="archivo" class="custom-file-upload">
+    <input [disabled]="!esSecretario" type="email" [(ngModel)]="recuadros.equipoEvaluador.correo"
+      placeholder="Correo del equipo evaluador" />
+    <label *ngIf="esSecretario" for="archivoAprobacionEquipo" class="custom-file-upload">
       <img src="assets/img/upload-icon.svg" alt="Upload Icon" />
       Adjunta tu documento aquí
     </label>
-    <input id="archivo" type="file" (change)="onFileSelected($event, recuadros.aprobacionEquipo)" accept="application/pdf" />
-    <button [disabled]="!esSecretario || recuadros.aprobacionEquipo.fechaEnvio"
-            (click)="sendEmail(recuadros.aprobacionEquipo)">
+    <input id="archivoAprobacionEquipo" type="file" (change)="onFileSelected($event, recuadros.aprobacionEquipo)"
+      accept="application/pdf" hidden />
+
+    <div *ngIf="!esSecretario && !recuadros.aprobacionEquipo.pdfFile" class="recuadro-pendiente">
+      <div class="custom-file-upload-disabled">
+        <img src="assets/img/pending-icon.svg" alt="Wait Icon" class="icon-wait" />
+        <span>Pendiente de carga</span>
+      </div>
+    </div>
+
+    <div *ngIf="recuadros.aprobacionEquipo.pdfFile" class="download-container">
+      <a [href]="recuadros.aprobacionEquipo.pdfFile" target="_blank" class="custom-file-upload download-style">
+        <img src="assets/img/download-icon.svg" alt="Descargar" />
+        <span>Ver / Descargar Expediente</span>
+      </a>
+    </div>
+    <button *ngIf="esSecretario && !recuadros.aprobacionEquipo.fechaEnvio"
+      (click)="sendEmail(recuadros.aprobacionEquipo)">
       {{ recuadros.aprobacionEquipo.fechaEnvio ? 'Enviado' : 'Enviar' }}
     </button>
   </div>
@@ -89,14 +177,29 @@
   <div class="recuadro">
     <h3>Notificación de área de graduación de aptitud para defensa del trabajo de titulación</h3>
     <p>Fecha: {{ recuadros.areaGraduacion.fechaEnvio ? recuadros.areaGraduacion.fechaEnvio : currentDate }}</p>
-    <input type="email" [(ngModel)]="recuadros.areaGraduacion.correo" placeholder="Correo del área de graduación" />
-    <label  for="archivo" class="custom-file-upload">
+    <input [disabled]="!esSecretario" type="email" [(ngModel)]="recuadros.areaGraduacion.correo"
+      placeholder="Correo del área de graduación" />
+    <label *ngIf="esSecretario" for="archivoAreaGraduacion" class="custom-file-upload">
       <img src="assets/img/upload-icon.svg" alt="Upload Icon" />
       Adjunta tu documento aquí
     </label>
-    <input id="archivo" type="file" (change)="onFileSelected($event, recuadros.areaGraduacion)" accept="application/pdf" />
-    <button [disabled]="!esSecretario || recuadros.areaGraduacion.fechaEnvio"
-            (click)="sendEmail(recuadros.areaGraduacion)">
+    <input id="archivoAreaGraduacion" type="file" (change)="onFileSelected($event, recuadros.areaGraduacion)"
+      accept="application/pdf" hidden />
+
+    <div *ngIf="!esSecretario && !recuadros.areaGraduacion.pdfFile" class="recuadro-pendiente">
+      <div class="custom-file-upload-disabled">
+        <img src="assets/img/pending-icon.svg" alt="Wait Icon" class="icon-wait" />
+        <span>Pendiente de carga</span>
+      </div>
+    </div>
+
+    <div *ngIf="recuadros.areaGraduacion.pdfFile" class="download-container">
+      <a [href]="recuadros.areaGraduacion.pdfFile" target="_blank" class="custom-file-upload download-style">
+        <img src="assets/img/download-icon.svg" alt="Descargar" />
+        <span>Ver / Descargar Expediente</span>
+      </a>
+    </div>
+    <button *ngIf="esSecretario && !recuadros.areaGraduacion.fechaEnvio" (click)="sendEmail(recuadros.areaGraduacion)">
       {{ recuadros.areaGraduacion.fechaEnvio ? 'Enviado' : 'Enviar' }}
     </button>
   </div>
@@ -106,8 +209,8 @@
     <h3>Notificación de grado señalando hora y fecha</h3>
     <p>Fecha: {{ fechaEnvioDirector ? fechaEnvioDirector : currentDate }}</p>
     <p>Director: {{ directorName }}</p>
-    <input type="datetime-local" [(ngModel)]="selectedDateTime" />
-    <button [disabled]="!esSecretario || fechaEnvioDirector" (click)="sendToDirector()">
+    <input type="datetime-local" [(ngModel)]="selectedDateTime" disabled="!esSecretario" />
+    <button *ngIf="esSecretario && !fechaEnvioDirector" (click)="sendToDirector()">
       {{ fechaEnvioDirector ? 'Enviado' : 'Enviar' }}
     </button>
   </div>
@@ -115,17 +218,34 @@
   <!-- Expediente de área de graduación derecho -->
   <div class="recuadro">
     <h3>Expediente de área de graduación derecho</h3>
-    <p>Fecha: {{ recuadros.expedienteGraduacion.fechaEnvio ? recuadros.expedienteGraduacion.fechaEnvio : currentDate }}</p>
-    <label  for="archivo" class="custom-file-upload">
+    <p>Fecha: {{ recuadros.expedienteGraduacion.fechaEnvio ? recuadros.expedienteGraduacion.fechaEnvio : currentDate }}
+    </p>
+    <label *ngIf="esSecretario" for="archivoExpedienteGraduacion" class="custom-file-upload">
       <img src="assets/img/upload-icon.svg" alt="Upload Icon" />
       Adjunta tu documento aquí
     </label>
-    <input id="archivo" type="file" (change)="onFileSelected($event, recuadros.expedienteGraduacion)" accept="application/pdf" />
-    <button [disabled]="!esSecretario || recuadros.expedienteGraduacion.fechaEnvio"
-            (click)="sendEmail(recuadros.expedienteGraduacion)">
+    <input id="archivoExpedienteGraduacion" type="file"
+      (change)="onFileSelected($event, recuadros.expedienteGraduacion)" accept="application/pdf" hidden />
+
+    <div *ngIf="!esSecretario && !recuadros.expedienteGraduacion.pdfFile" class="recuadro-pendiente">
+      <div class="custom-file-upload-disabled">
+        <img src="assets/img/pending-icon.svg" alt="Wait Icon" class="icon-wait" />
+        <span>Pendiente de carga</span>
+      </div>
+    </div>
+
+    <div *ngIf="recuadros.expedienteGraduacion.pdfFile" class="download-container">
+      <a [href]="recuadros.expedienteGraduacion.pdfFile" target="_blank" class="custom-file-upload download-style">
+        <img src="assets/img/download-icon.svg" alt="Descargar" />
+        <span>Ver / Descargar Expediente</span>
+      </a>
+    </div>
+
+    <button *ngIf="esSecretario && !recuadros.expedienteGraduacion.fechaEnvio"
+      (click)="sendEmail(recuadros.expedienteGraduacion)">
       {{ recuadros.expedienteGraduacion.fechaEnvio ? 'Enviado' : 'Enviar' }}
     </button>
   </div>
-
 </div>
+
 <app-footer2></app-footer2>

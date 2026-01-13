@@ -2,18 +2,19 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { LoginService } from '../../services/login.service';
 import { ConsultasService } from '../../services/consultas.service';
-import {catchError, forkJoin, Observable, of, take, throwError} from 'rxjs';
+import { catchError, forkJoin, Observable, of, take, throwError } from 'rxjs';
 import { switchMap, map } from 'rxjs/operators';
 import Class from '../../interfaces/classes.interface';
-import autoTable from "jspdf-autotable";
-import {jsPDF} from "jspdf";
+import autoTable from 'jspdf-autotable';
+import { jsPDF } from 'jspdf';
 import * as XLSX from 'xlsx'; // Importar la librería xlsx
-import {AlertaService} from "../../services/alert.service";
+import { AlertaService } from '../../services/alert.service';
+import { from } from 'rxjs';
 
 @Component({
   selector: 'app-info',
   templateUrl: './info.component.html',
-  styleUrls: ['./info.component.css']
+  styleUrls: ['./info.component.css'],
 })
 export class InfoComponent implements OnInit {
   userRole: string | null = null;
@@ -22,13 +23,13 @@ export class InfoComponent implements OnInit {
   selectedModality: string | null = null;
   selectedClass: string | null = null;
 
-  filteredClasses$: Observable<(Class & { professorName: string })[]> | null = null;
+  filteredClasses$: Observable<(Class & { professorName: string })[]> | null =
+    null;
   isCreatingTesis = false;
 
   tesisList: any[] = []; // Lista completa de tesis
   filteredTesis: any[] = []; // Lista filtrada según el buscador
   searchTerm: string = '';
-
 
   selectedFile: File | null = null;
   isLoading = false;
@@ -36,8 +37,7 @@ export class InfoComponent implements OnInit {
   isError = false;
 
   // Nueva propiedad para el rol seleccionado en el <select>
-  selectedRoleForUpload: 'director' | 'equipo evaluador' | null = null;
-
+  selectedRoleForUpload: 'director' | 'evaluador' | null = null;
 
   cycles: any[] = [];
   selectedCycleId: string = '';
@@ -50,12 +50,13 @@ export class InfoComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.loginService.getCurrentUser().subscribe(user => {
+    this.loginService.getCurrentUser().subscribe((user) => {
       if (user) {
         this.userRole = user.role;
 
         if (user.role === 'estudiante') {
           this.availableRoles = ['estudiante'];
+          this.loadStudentTesis(user.id);
         } else if (['secretario', 'director', 'docente'].includes(user.role)) {
           this.availableRoles = ['secretario', 'director', 'docente'];
           this.loadTesis();
@@ -64,116 +65,133 @@ export class InfoComponent implements OnInit {
         console.error('No se encontró el usuario autenticado.');
       }
     });
-    this.consultasService.getCycles().subscribe(cycles => {
+    this.consultasService.getCycles().subscribe((cycles) => {
       this.cycles = cycles;
     });
   }
 
+  loadStudentTesis(userId: string): void {
+    this.consultasService.getTesisByUserId(userId).subscribe({
+      next: (tesis) => {
+        this.tesisList = tesis; //
+        this.filteredTesis = tesis; // Actualiza la vista filtrada
+        console.log('Tesis del estudiante cargadas:', tesis);
+      },
+      error: (err) => {
+        console.error('Error al cargar las tesis del estudiante:', err);
+        this.alertaService.mostrarAlerta(
+          'error',
+          'Error',
+          'No se pudieron cargar tus registros de tesis.'
+        );
+      },
+    });
+  }
 
   onModalityChange(modality: string): void {
     this.selectedModality = modality;
-    this.filteredClasses$ = this.consultasService.getClassesByModality(modality);
+    this.filteredClasses$ =
+      this.consultasService.getClassesByModality(modality);
   }
 
   isButtonEnabled(): boolean {
-    return this.selectedCycleId !== null && this.selectedClass !== null && !this.isCreatingTesis;
+    return (
+      this.selectedCycleId !== null &&
+      this.selectedClass !== null &&
+      !this.isCreatingTesis
+    );
   }
 
   goToProfile(): void {
     if (!this.isButtonEnabled()) {
       console.warn('Botón deshabilitado. Verifica selecciones.');
-      return; // Sale si el botón no está habilitado
+      return;
     }
 
-    this.isCreatingTesis = true; // Bloquea el botón
+    this.isCreatingTesis = true;
 
-    // 1. Obtener usuario actual, directores y todas las tesis existentes
+    // 1. Obtener usuario y datos de clase
     forkJoin({
-      user: this.loginService.getCurrentUser().pipe(take(1)), // Tomar solo el primer valor para evitar problemas con forkJoin
-      directors: this.consultasService.getUserByRole('director').pipe(take(1)),
-      allTesis: this.consultasService.getAllTesis().pipe(take(1)),
-      // También necesitamos los datos de la clase seleccionada
-      classData: this.selectedClass ? this.consultasService.getClassById(this.selectedClass).pipe(take(1)) : of(null)
-    }).pipe(
-      switchMap(results => {
-        const { user, directors, allTesis, classData } = results;
+      user: this.loginService.getCurrentUser().pipe(take(1)),
+      classData: this.selectedClass
+        ? this.consultasService.getClassById(this.selectedClass).pipe(take(1))
+        : of(null),
+    })
+      .pipe(
+        switchMap((results) => {
+          const { user, classData } = results;
+          if (!user) throw new Error('Usuario no autenticado.');
+          if (!classData) throw new Error('Datos de clase no encontrados.');
 
-        // Validaciones
-        if (!user) {
-          return throwError(() => new Error('Usuario no autenticado.'));
+          // 2. Verificar si es la primera tesis
+          return from(this.consultasService.isFirstThesis(user.id)).pipe(
+            map((isFirst) => ({ user, classData, isFirst }))
+          );
+        }),
+        switchMap(({ user, classData, isFirst }) => {
+          const cicloSeleccionado = this.cycles.find(
+            (c) => c.id === this.selectedCycleId
+          );
+
+          const baseTesisData = {
+            studentName: `${user.firstName} ${user.lastName}`,
+            userId: user.id,
+            className: classData.name,
+            classId: classData.id,
+            professorId: classData.professorId,
+            professorName: classData.professorName,
+            professorEmail: classData.professorEmail,
+            status: 'Faltante',
+            progress: 0,
+            Facultad: 'Facultad de Ciencias Jurídicas y Políticas',
+            Carrera: 'Derecho',
+            ciclo: cicloSeleccionado ? cicloSeleccionado.name : '',
+            createdAt: new Date(),
+          };
+
+          if (isFirst) {
+            // CASO A: Primera tesis -> Asignación Aleatoria Automática
+            return from(
+              this.consultasService.saveTesisWithRandomAssignment(baseTesisData)
+            );
+          } else {
+            // CASO B: Ya tiene tesis -> Asignación Manual (Campos vacíos)
+            const manualTesisData = {
+              ...baseTesisData,
+              directorId: null,
+              directorName: 'Pendiente de asignar',
+              evaluationTeam: [],
+              assignmentMode: 'Manual',
+            };
+            return this.consultasService.saveTesis(manualTesisData);
+          }
+        }),
+        catchError((error) => {
+          console.error('Error:', error);
+          this.alertaService.mostrarAlerta(
+            'error',
+            'Error al procesar',
+            error.message
+          );
+          this.isCreatingTesis = false;
+          return of(null);
+        })
+      )
+      .subscribe((tesisId) => {
+        if (tesisId) {
+          this.alertaService.mostrarAlerta(
+            'exito',
+            'Tesis Registrada',
+            'Se ha procesado su solicitud correctamente.'
+          );
+          this.router.navigate(['/profile'], { queryParams: { tesisId } });
         }
-        if (!classData) {
-          return throwError(() => new Error('No se pudieron obtener los datos de la clase seleccionada.'));
-        }
-        if (!directors || directors.length === 0) {
-          return throwError(() => new Error('No hay directores disponibles para asignar.'));
-        }
-
-        // 2. Calcular el director a asignar
-        const totalTesis = allTesis.length;
-        const totalDirectors = directors.length;
-        const directorIndex = Math.floor(totalTesis / 7) % totalDirectors;
-        const assignedDirector = directors[directorIndex]; // Asegúrate que getUserByRole devuelva objetos User con id, firstName, lastName
-
-        if (!assignedDirector || !assignedDirector.id || !assignedDirector.firstName) {
-          return throwError(() => new Error('Director seleccionado inválido o le faltan datos (id, firstName, lastName).'));
-        }
-
-        const cicloSeleccionado = this.cycles.find(c => c.id === this.selectedCycleId);
-        const cicloName = cicloSeleccionado ? cicloSeleccionado.name : '';
-
-        // 3. Preparar datos de la nueva tesis
-        const tesisData = {
-          studentName: `${user.firstName} ${user.lastName}`,
-          userId: user.id, // ID del estudiante
-          className: classData.name,
-          classId: classData.id, // Guarda el ID de la clase también si es útil
-          professorName: classData.professorName, // Profesor de la clase
-          directorId: assignedDirector.id, // ID del director asignado
-          directorEmail: assignedDirector.email,
-          directorName: `${assignedDirector.firstName} ${assignedDirector.lastName}`, // Nombre del director asignado
-          status: 'Faltante', // Estado inicial
-          progress: 0, // Progreso inicial
-          Facultad: 'Facultad de Ciencias Jurídicas y Políticas', // Puedes hacerlo dinámico si es necesario
-          Carrera: 'Derecho', // Puedes hacerlo dinámico si es necesario
-          createdAt: new Date(), // Fecha de creación
-          ciclo: cicloName,
-          // Agrega cualquier otro campo inicial necesario
-        };
-
-        // 4. Guardar la nueva tesis
-        return this.consultasService.saveTesis(tesisData);
-      }),
-      catchError(error => {
-        // Manejo centralizado de errores de la cadena
-        console.error('Error en el proceso de creación de tesis:', error);
-        this.isCreatingTesis = false; // Desbloquea el botón en caso de error
-        // Podrías mostrar un mensaje al usuario aquí
-        this.alertaService.mostrarAlerta('error', 'Error al crear tesis', error.message);
-        return of(null); // Devuelve un observable nulo para que la subscripción no falle
-      })
-    ).subscribe({
-      next: (tesisId) => {
-        if (tesisId) { // Solo navega si se obtuvo un ID de tesis válido
-          console.log('Tesis creada con ID:', tesisId);
-          this.alertaService.mostrarAlerta('exito', 'Tesis creada', 'La tesis fue creada correctamente.');
-          this.router.navigate(['/profile'], { queryParams: { tesisId: tesisId } });
-        }
-        // Si tesisId es null (por el catchError), no navega pero ya se manejó el error.
-        this.isCreatingTesis = false; // Desbloquea el botón al completar (éxito o error manejado)
-      },
-      // El bloque error del subscribe ya no es estrictamente necesario si usamos catchError bien,
-      // pero lo dejamos por si acaso.
-      error: (error) => {
-        // Este error solo se alcanzaría si hay un problema en la navegación o algo después del catchError
-        console.error('Error final inesperado:', error);
         this.isCreatingTesis = false;
-      }
-    });
+      });
   }
 
   loadTesis(): void {
-    this.consultasService.getAllTesis().subscribe(tesis => {
+    this.consultasService.getAllTesis().subscribe((tesis) => {
       this.tesisList = tesis;
       this.filteredTesis = tesis; // Inicialmente, muestra todas las tesis
     });
@@ -181,9 +199,10 @@ export class InfoComponent implements OnInit {
 
   onSearch(): void {
     const searchTermLower = this.searchTerm.toLowerCase();
-    this.filteredTesis = this.tesisList.filter(tesis =>
-      tesis.studentName.toLowerCase().includes(searchTermLower) ||
-      tesis.userId.toLowerCase().includes(searchTermLower)
+    this.filteredTesis = this.tesisList.filter(
+      (tesis) =>
+        tesis.studentName.toLowerCase().includes(searchTermLower) ||
+        tesis.userId.toLowerCase().includes(searchTermLower)
     );
   }
 
@@ -198,18 +217,34 @@ export class InfoComponent implements OnInit {
 
     autoTable(doc, {
       startY: 20,
-      head: [['Nombre del estudiante', 'Docente', 'Facultad', 'Carrera', 'Identificación', 'Asignatura', 'Estado', 'Avance']],
-      body: this.filteredTesis.map(tesis => [
-        tesis.studentName, tesis.professorName, 'Facultad de Ciencias Jurídicas y Políticas', 'Derecho', tesis.userId,
-        tesis.className, tesis.status, `${tesis.progress}%`
+      head: [
+        [
+          'Nombre del estudiante',
+          'Docente',
+          'Facultad',
+          'Carrera',
+          'Identificación',
+          'Asignatura',
+          'Estado',
+          'Avance',
+        ],
+      ],
+      body: this.filteredTesis.map((tesis) => [
+        tesis.studentName,
+        tesis.professorName,
+        'Facultad de Ciencias Jurídicas y Políticas',
+        'Derecho',
+        tesis.userId,
+        tesis.className,
+        tesis.status,
+        `${tesis.progress}%`,
       ]),
       theme: 'striped',
-      styles: { fontSize: 10 }
+      styles: { fontSize: 10 },
     });
 
     doc.save('seguimiento_tesis.pdf');
   }
-
 
   onFileSelected(event: any): void {
     const file = event.target.files[0];
@@ -221,7 +256,8 @@ export class InfoComponent implements OnInit {
         this.isError = false;
       } else {
         this.selectedFile = null;
-        this.feedbackMessage = 'Error: Por favor, selecciona un archivo Excel (.xlsx o .xls).';
+        this.feedbackMessage =
+          'Error: Por favor, selecciona un archivo Excel (.xlsx o .xls).';
         this.isError = true;
       }
     }
@@ -235,7 +271,8 @@ export class InfoComponent implements OnInit {
       return;
     }
     if (!this.selectedRoleForUpload) {
-      this.feedbackMessage = 'Error: Debes seleccionar un rol para asignar a los usuarios.';
+      this.feedbackMessage =
+        'Error: Debes seleccionar un rol para asignar a los usuarios.';
       this.isError = true;
       return; // Detener si no se ha seleccionado rol
     }
@@ -253,7 +290,9 @@ export class InfoComponent implements OnInit {
         const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet);
 
         if (!jsonData || jsonData.length === 0) {
-          throw new Error("El archivo Excel está vacío o no tiene el formato esperado.");
+          throw new Error(
+            'El archivo Excel está vacío o no tiene el formato esperado.'
+          );
         }
 
         this.feedbackMessage = `Archivo leído. Procesando ${jsonData.length} registros para el rol: ${this.selectedRoleForUpload}...`;
@@ -262,36 +301,43 @@ export class InfoComponent implements OnInit {
         const firstRow = jsonData[0];
         for (const col of requiredColumns) {
           if (!(col in firstRow)) {
-            throw new Error(`Falta la columna requerida: '${col}' en el archivo Excel.`);
+            throw new Error(
+              `Falta la columna requerida: '${col}' en el archivo Excel.`
+            );
           }
         }
 
         // Usar el rol seleccionado del <select>
         const roleToAssign = this.selectedRoleForUpload;
 
-        const usersToCreate = jsonData.map(row => {
-          // Validar que los campos no estén vacíos en la fila actual
-          if (!row.nombre || !row.apellido || !row.email) {
-            console.warn(`Fila omitida por datos faltantes: ${JSON.stringify(row)}`);
-            // Puedes lanzar un error o simplemente omitir la fila
-            return null; // Marcar para filtrar después
-          }
-          return {
-            firstName: String(row.nombre).trim(),
-            lastName: String(row.apellido).trim(),
-            email: String(row.email).trim().toLowerCase(),
-            role: roleToAssign // Asignar el rol seleccionado
-            // El campo 'id' será añadido por el servicio addUser
-          };
-        }).filter(user => user !== null); // Filtrar filas marcadas como nulas (omitidas)
+        const usersToCreate = jsonData
+          .map((row) => {
+            // Validar que los campos no estén vacíos en la fila actual
+            if (!row.nombre || !row.apellido || !row.email) {
+              console.warn(
+                `Fila omitida por datos faltantes: ${JSON.stringify(row)}`
+              );
+              // Puedes lanzar un error o simplemente omitir la fila
+              return null; // Marcar para filtrar después
+            }
+            return {
+              firstName: String(row.nombre).trim(),
+              lastName: String(row.apellido).trim(),
+              email: String(row.email).trim().toLowerCase(),
+              role: roleToAssign, // Asignar el rol seleccionado
+              // El campo 'id' será añadido por el servicio addUser
+            };
+          })
+          .filter((user) => user !== null); // Filtrar filas marcadas como nulas (omitidas)
 
         if (usersToCreate.length === 0) {
-          throw new Error("No se encontraron filas válidas con datos completos en el archivo.");
+          throw new Error(
+            'No se encontraron filas válidas con datos completos en el archivo.'
+          );
         }
 
         this.feedbackMessage = `Datos validados. Guardando ${usersToCreate.length} usuarios con rol '${roleToAssign}'...`;
         this.saveUsersBatch(usersToCreate); // Llama a guardar
-
       } catch (error: any) {
         this.feedbackMessage = `Error al procesar el archivo: ${error.message}`;
         this.isError = true;
@@ -313,13 +359,17 @@ export class InfoComponent implements OnInit {
     let errorCount = 0;
     const errorMessages: string[] = [];
 
-    const promises = users.map(user =>
-      this.consultasService.addUser(user) // Llama al método addUser actualizado
+    const promises = users.map((user) =>
+      this.consultasService
+        .addUser(user) // Llama al método addUser actualizado
         .then(() => successCount++)
-        .catch(error => { // El error relanzado desde addUser se captura aquí
+        .catch((error) => {
+          // El error relanzado desde addUser se captura aquí
           errorCount++;
           // Usar el mensaje de error formateado desde addUser
-          errorMessages.push(error.message || `Error desconocido procesando ${user.email}`);
+          errorMessages.push(
+            error.message || `Error desconocido procesando ${user.email}`
+          );
         })
     );
 
@@ -329,11 +379,17 @@ export class InfoComponent implements OnInit {
       this.feedbackMessage = `Proceso completado. ${successCount} usuarios guardados. ${errorCount} errores.`;
       if (errorCount > 0) {
         this.isError = true;
-        this.feedbackMessage += `\n--- Detalles de errores ---\n${errorMessages.join('\n')}`;
-        console.error("Errores detallados:", errorMessages);
+        this.feedbackMessage += `\n--- Detalles de errores ---\n${errorMessages.join(
+          '\n'
+        )}`;
+        console.error('Errores detallados:', errorMessages);
       } else {
         this.isError = false;
-        this.alertaService.mostrarAlerta('exito', 'Usuarios registrados', 'Todos los usuarios fueron guardados correctamente.');
+        this.alertaService.mostrarAlerta(
+          'exito',
+          'Usuarios registrados',
+          'Todos los usuarios fueron guardados correctamente.'
+        );
       }
     } catch (finalError: any) {
       this.feedbackMessage = `Error inesperado durante el guardado: ${finalError.message}`;
@@ -342,14 +398,12 @@ export class InfoComponent implements OnInit {
       this.isLoading = false;
       this.selectedFile = null;
       // Resetear el input file si es necesario
-      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      const fileInput = document.querySelector(
+        'input[type="file"]'
+      ) as HTMLInputElement;
       if (fileInput) fileInput.value = '';
       // No resetear el rol seleccionado para facilitar cargas múltiples con el mismo rol
       // this.selectedRoleForUpload = null;
     }
   }
-
-
-
-
 }

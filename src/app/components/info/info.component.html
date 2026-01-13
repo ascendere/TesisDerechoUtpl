@@ -8,14 +8,53 @@
 
   <div class="texto-introductorio">
     <p>
-      En un mundo en constante cambio, la educación se erige como la piedra angular del progreso y la adaptabilidad. En este contexto, se están implementando estrategias innovadoras que buscan transformar la manera en que enseñamos y aprendemos.
-      Desde el uso de tecnologías emergentes hasta enfoques pedagógicos vanguardistas, la revolución educativa está en marcha. La integración de la inteligencia artificial en el aula no solo personaliza la experiencia de aprendizaje, sino que también abre nuevas puertas a la creatividad y la resolución de problemas.
+      En un mundo en constante cambio, la educación se erige como la piedra angular del progreso y la adaptabilidad. En
+      este contexto, se están implementando estrategias innovadoras que buscan transformar la manera en que enseñamos y
+      aprendemos.
+      Desde el uso de tecnologías emergentes hasta enfoques pedagógicos vanguardistas, la revolución educativa está en
+      marcha. La integración de la inteligencia artificial en el aula no solo personaliza la experiencia de aprendizaje,
+      sino que también abre nuevas puertas a la creatividad y la resolución de problemas.
     </p>
   </div>
 
   <!-- Vista para estudiantes -->
   <div *ngIf="userRole === 'estudiante'" class="seleccion">
+
+    <!-- Tabla con las tesis -->
+    <div class="tabla-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Nombre de docente</th>
+            <th>Facultad</th>
+            <th>Carrera</th>
+            <th>Asignatura</th>
+            <th>Estado</th>
+            <th>Avance</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let tesis of filteredTesis">
+            <td>{{ tesis.professorName }}</td>
+            <td>Facultad de Ciencias Jurídicas y Políticas</td>
+            <td>Derecho</td>
+            <td>{{ tesis.className }}</td>
+            <td [ngClass]="{'completado': tesis.status === 'Completado', 'faltante': tesis.status === 'Faltante'}">
+              {{ tesis.status }}
+            </td>
+            <td [ngStyle]="{'color': tesis.progress < 100 ? 'red' : 'green'}">{{ tesis.progress }}%</td>
+            <td><a class="a" (click)="goToTracking(tesis.id)">Ver seguimiento</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <br>
+
     <div class="roles-selection">
+      <h1>Crear nueva tesis</h1>
+
       <label for="cycle">Seleccionar ciclo:</label>
       <select id="cycle" [(ngModel)]="selectedCycleId" name="cycle" required>
         <option value="" disabled selected>-- Elige un ciclo --</option>
@@ -40,6 +79,7 @@
         </select>
       </div>
     </div>
+    <br>
 
     <div class="perfil-boton">
       <button (click)="goToProfile()" [disabled]="!isButtonEnabled()" class="profile-button">
@@ -62,32 +102,32 @@
     <div class="tabla-container">
       <table>
         <thead>
-        <tr>
-          <th>Nombre del estudiante</th>
-          <th>Nombre de docentes</th>
-          <th>Facultad</th>
-          <th>Carrera</th>
-          <th>Identificación</th>
-          <th>Asignatura</th>
-          <th>Estado</th>
-          <th>Avance</th>
-          <th>Acción</th>
-        </tr>
+          <tr>
+            <th>Nombre del estudiante</th>
+            <th>Nombre de docentes</th>
+            <th>Facultad</th>
+            <th>Carrera</th>
+            <th>Identificación</th>
+            <th>Asignatura</th>
+            <th>Estado</th>
+            <th>Avance</th>
+            <th>Acción</th>
+          </tr>
         </thead>
         <tbody>
-        <tr *ngFor="let tesis of filteredTesis">
-          <td>{{ tesis.studentName }}</td>
-          <td>{{ tesis.professorName }}</td>
-          <td>Facultad de Ciencias Jurídicas y Políticas</td>
-          <td>Derecho</td>
-          <td>{{ tesis.userId }}</td>
-          <td>{{ tesis.className }}</td>
-          <td [ngClass]="{'completado': tesis.status === 'Completado', 'faltante': tesis.status === 'Faltante'}">
-            {{ tesis.status }}
-          </td>
-          <td [ngStyle]="{'color': tesis.progress < 100 ? 'red' : 'green'}">{{ tesis.progress }}%</td>
-          <td><a class="a" (click)="goToTracking(tesis.id)">Ver seguimiento</a></td>
-        </tr>
+          <tr *ngFor="let tesis of filteredTesis">
+            <td>{{ tesis.studentName }}</td>
+            <td>{{ tesis.professorName }}</td>
+            <td>Facultad de Ciencias Jurídicas y Políticas</td>
+            <td>Derecho</td>
+            <td>{{ tesis.userId }}</td>
+            <td>{{ tesis.className }}</td>
+            <td [ngClass]="{'completado': tesis.status === 'Completado', 'faltante': tesis.status === 'Faltante'}">
+              {{ tesis.status }}
+            </td>
+            <td [ngStyle]="{'color': tesis.progress < 100 ? 'red' : 'green'}">{{ tesis.progress }}%</td>
+            <td><a class="a" (click)="goToTracking(tesis.id)">Ver seguimiento</a></td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -97,7 +137,9 @@
 
   <div *ngIf="userRole === 'secretario'">
     <h2>Gestión de Usuarios</h2>
-    <p>Carga un archivo Excel (.xlsx) con las columnas: <strong>nombre</strong>, <strong>apellido</strong>, <strong>email</strong>.</p>
+    <p>Carga un archivo Excel (.xlsx) con las columnas: <strong>nombre</strong>, <strong>apellido</strong>,
+      <strong>email</strong>.
+    </p>
 
     <div class="role-select" style="margin-bottom: 15px;">
       <label for="role-select" style="margin-right: 10px;"><strong>Rol a asignar:</strong></label>
@@ -112,13 +154,13 @@
       <input type="file" #fileInput (change)="onFileSelected($event)" accept=".xlsx, .xls">
     </div>
 
-    <button (click)="processExcelFile()"
-            [disabled]="!selectedFile || !selectedRoleForUpload || isLoading"
-            style="margin: 15px; padding: 10px;" class="abs">
+    <button (click)="processExcelFile()" [disabled]="!selectedFile || !selectedRoleForUpload || isLoading"
+      style="margin: 15px; padding: 10px;" class="abs">
       {{ isLoading ? 'Procesando...' : 'Cargar Usuarios desde Archivo' }}
     </button>
 
-    <div *ngIf="feedbackMessage" [ngClass]="{'success': !isError, 'error': isError}" style="margin-top: 15px; white-space: pre-wrap;">
+    <div *ngIf="feedbackMessage" [ngClass]="{'success': !isError, 'error': isError}"
+      style="margin-top: 15px; white-space: pre-wrap;">
       {{ feedbackMessage }}
     </div>
   </div>

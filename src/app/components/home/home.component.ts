@@ -1,13 +1,13 @@
 import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ConsultasService } from '../../services/consultas.service';
 import { LoginService } from '../../services/login.service';
-import {first, switchMap} from "rxjs/operators";
+import { first, switchMap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-home',
   templateUrl: './home.component.html',
-  styleUrls: ['./home.component.css']
+  styleUrls: ['./home.component.css'],
 })
 export class HomeComponent implements OnInit {
   constructor(
@@ -19,25 +19,31 @@ export class HomeComponent implements OnInit {
   ngOnInit(): void {}
 
   iniciar(): void {
-    this.authService.getUserId().pipe(
-      first(), // Obtener solo el primer valor del Observable
-      switchMap(userId => {
-        if (!userId) {
-          console.error('Usuario no autenticado');
-          return []; // Retorna un array vacío si el usuario no está autenticado
+    this.authService
+      .getUserId()
+      .pipe(
+        first(), // Obtener solo el primer valor del Observable
+        switchMap((userId) => {
+          if (!userId) {
+            this.router.navigate(['/login']);
+            console.error('Usuario no autenticado');
+            return []; // Retorna un array vacío si el usuario no está autenticado
+          }
+          return this.consultasService.getTesisByUserId(userId);
+        })
+      )
+      .subscribe(
+        (tesisArray) => {
+          if (tesisArray.length > 0) {
+            // const tesisId = tesisArray[0].id; // Obtiene el ID del primer documento
+            this.router.navigate(['/info']);
+          } else {
+            this.router.navigate(['/info']);
+          }
+        },
+        (error) => {
+          console.error('Error al verificar la tesis:', error);
         }
-        return this.consultasService.getTesisByUserId(userId);
-      })
-    ).subscribe(tesisArray => {
-      if (tesisArray.length > 0) {
-        const tesisId = tesisArray[0].id; // Obtiene el ID del primer documento
-        this.router.navigate(['/personal'], { queryParams: { tesisId } });
-      } else {
-        this.router.navigate(['/info']);
-      }
-    }, error => {
-      console.error('Error al verificar la tesis:', error);
-    });
+      );
   }
-
 }
