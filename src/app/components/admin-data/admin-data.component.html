@@ -47,7 +47,7 @@
         {{prof.email }}
       </option>
     </select>
-    <p *ngIf="!esSecretario">{{ selectedDirector?.email }}</p>
+    <p *ngIf="!esSecretario">{{ recuadros.director.correo }}</p>
     <label *ngIf="esSecretario" for="archivoNotificacionDirector" class="custom-file-upload">
       <img src="assets/img/upload-icon.svg" alt="Upload Icon" />
       Adjunta tu documento aquí
@@ -145,8 +145,10 @@
   <div class="recuadro">
     <h3>Aprobación del trabajo de titulación del equipo evaluador</h3>
     <p>Fecha: {{ recuadros.aprobacionEquipo.fechaEnvio ? recuadros.aprobacionEquipo.fechaEnvio : currentDate }}</p>
-    <input [disabled]="!esSecretario" type="email" [(ngModel)]="recuadros.equipoEvaluador.correo"
-      placeholder="Correo del equipo evaluador" />
+    <p>{{ recuadros.equipoEvaluador.correo}}</p>
+
+  <!--  <input [disabled]="!esSecretario" type="email" [(ngModel)]="recuadros.equipoEvaluador.correo"
+      placeholder="Correo del equipo evaluador" /> -->
     <label *ngIf="esSecretario" for="archivoAprobacionEquipo" class="custom-file-upload">
       <img src="assets/img/upload-icon.svg" alt="Upload Icon" />
       Adjunta tu documento aquí

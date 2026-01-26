@@ -3,14 +3,14 @@ import { Router } from '@angular/router';
 import { LoginService } from '../../services/login.service';
 import { ConsultasService } from '../../services/consultas.service';
 import { catchError, forkJoin, Observable, of, take, throwError } from 'rxjs';
-import { switchMap, map } from 'rxjs/operators';
+import { switchMap, map, first } from 'rxjs/operators';
 import Class from '../../interfaces/classes.interface';
 import autoTable from 'jspdf-autotable';
 import { jsPDF } from 'jspdf';
 import * as XLSX from 'xlsx'; // Importar la librería xlsx
 import { AlertaService } from '../../services/alert.service';
 import { from } from 'rxjs';
-
+import { ImportService } from 'src/app/services/import.service';
 @Component({
   selector: 'app-info',
   templateUrl: './info.component.html',
@@ -35,33 +35,80 @@ export class InfoComponent implements OnInit {
   isLoading = false;
   feedbackMessage = '';
   isError = false;
-
+  classMap: Map<string, any> = new Map(); // Mapa para asignaturas y paralelos
+  activeCycleId: string = 'VigK04NJGN5Z60HIgK62'; // Ejemplo de ciclo activo
   // Nueva propiedad para el rol seleccionado en el <select>
-  selectedRoleForUpload: 'director' | 'evaluador' | null = null;
+  selectedRoleForUpload:
+    | 'director'
+    | 'evaluador'
+    | 'estudiante'
+    | 'docente'
+    | null = null;
 
   cycles: any[] = [];
   selectedCycleId: string = '';
+  filteredClasses: (Class & { professorName: string })[] = [];
+
+  archivoSeleccionado: File | null = null;
+  rolACargar: string = 'estudiante'; // Por defecto
+  mensaje: string = '';
+
+  isModalVisible: boolean = false;
+  selectedThesis: any = null;
+  availableStaff: any[] = [];
+  modalAction: 'approve' | 'reject' | null = null;
+
+  // Form data for the modal
+  assignmentForm = {
+    directorId: '',
+    evaluatorId: '',
+    rejectionReason: '',
+  };
+  // Variables para el control del Modal y formulario manual
+  showModal: boolean = false;
+  showTesisModal = false;
+  selectedRejectionReason: string = '';
+  isRejectionModalVisible: boolean = false;
+
+  newUser: any = {
+    nombre: '',
+    apellido: '',
+    email: '',
+    cedula: '',
+    asignatura: '',
+    paralelo: '',
+    titulo: '',
+    modalidad: '',
+  };
+
+  tipoTesis: 'pregrado' | 'posgrado' | null = null;
+  datosTesis = {
+    numeroSentencia: '',
+    asunto: '',
+    tituloPosgrado: '',
+  };
+
+  // Abrir modal
+  openCreateModal() {
+    this.showModal = true;
+    this.feedbackMessage = '';
+  }
 
   constructor(
     private loginService: LoginService,
     private consultasService: ConsultasService,
     private router: Router,
-    private alertaService: AlertaService
+    private alertaService: AlertaService,
+    private importService: ImportService,
   ) {}
 
   ngOnInit(): void {
     this.loginService.getCurrentUser().subscribe((user) => {
       if (user) {
         this.userRole = user.role;
-
-        if (user.role === 'estudiante') {
-          this.availableRoles = ['estudiante'];
-          this.loadStudentTesis(user.id);
-        } else if (['secretario', 'director', 'docente'].includes(user.role)) {
-          this.availableRoles = ['secretario', 'director', 'docente'];
-          this.loadTesis();
-        }
+        this.loadStudentTesis(user.id);
       } else {
+        this.router.navigate(['/login']);
         console.error('No se encontró el usuario autenticado.');
       }
     });
@@ -71,7 +118,7 @@ export class InfoComponent implements OnInit {
   }
 
   loadStudentTesis(userId: string): void {
-    this.consultasService.getTesisByUserId(userId).subscribe({
+    this.consultasService.getTesisByUser(userId, this.userRole).subscribe({
       next: (tesis) => {
         this.tesisList = tesis; //
         this.filteredTesis = tesis; // Actualiza la vista filtrada
@@ -82,7 +129,7 @@ export class InfoComponent implements OnInit {
         this.alertaService.mostrarAlerta(
           'error',
           'Error',
-          'No se pudieron cargar tus registros de tesis.'
+          'No se pudieron cargar tus registros de tesis.',
         );
       },
     });
@@ -90,8 +137,14 @@ export class InfoComponent implements OnInit {
 
   onModalityChange(modality: string): void {
     this.selectedModality = modality;
-    this.filteredClasses$ =
-      this.consultasService.getClassesByModality(modality);
+    this.selectedClass = null; // reset explícito y controlado
+
+    this.consultasService
+      .getClassesByModality(modality)
+      .pipe(take(1))
+      .subscribe((classes) => {
+        this.filteredClasses = classes;
+      });
   }
 
   isButtonEnabled(): boolean {
@@ -103,14 +156,17 @@ export class InfoComponent implements OnInit {
   }
 
   goToProfile(): void {
-    if (!this.isButtonEnabled()) {
-      console.warn('Botón deshabilitado. Verifica selecciones.');
+    if (!this.isButtonEnabled() || !this.tipoTesis) {
+      this.alertaService.mostrarAlerta(
+        'error',
+        'Incompleto',
+        'Selecciona el tipo de tesis y completa los campos.',
+      );
       return;
     }
 
     this.isCreatingTesis = true;
-
-    // 1. Obtener usuario y datos de clase
+    console.log('selectedClass:', this.selectedClass);
     forkJoin({
       user: this.loginService.getCurrentUser().pipe(take(1)),
       classData: this.selectedClass
@@ -122,67 +178,64 @@ export class InfoComponent implements OnInit {
           const { user, classData } = results;
           if (!user) throw new Error('Usuario no autenticado.');
           if (!classData) throw new Error('Datos de clase no encontrados.');
+          console.log('classData:', classData);
 
-          // 2. Verificar si es la primera tesis
           return from(this.consultasService.isFirstThesis(user.id)).pipe(
-            map((isFirst) => ({ user, classData, isFirst }))
+            map((isFirst) => ({ user, classData, isFirst })),
           );
         }),
         switchMap(({ user, classData, isFirst }) => {
           const cicloSeleccionado = this.cycles.find(
-            (c) => c.id === this.selectedCycleId
+            (c) => c.id === this.selectedCycleId,
           );
 
-          const baseTesisData = {
+          // OBJETO BASE
+          let tesisData: any = {
             studentName: `${user.firstName} ${user.lastName}`,
             userId: user.id,
-            className: classData.name,
+            className: classData.subjectName,
+            classParallel: classData.parallel,
             classId: classData.id,
             professorId: classData.professorId,
             professorName: classData.professorName,
             professorEmail: classData.professorEmail,
-            status: 'Faltante',
+            status: isFirst ? 'Faltante' : 'Pendiente de Aprobar',
             progress: 0,
-            Facultad: 'Facultad de Ciencias Jurídicas y Políticas',
-            Carrera: 'Derecho',
             ciclo: cicloSeleccionado ? cicloSeleccionado.name : '',
+            tipo: this.tipoTesis, // 'pregrado' o 'posgrado'
             createdAt: new Date(),
           };
 
+          // CAMPOS ESPECÍFICOS DEL DIAGRAMA
+          if (this.tipoTesis === 'pregrado') {
+            tesisData.numeroSentencia = this.datosTesis.numeroSentencia;
+            tesisData.asunto = this.datosTesis.asunto;
+          } else {
+            tesisData.tituloTesis = this.datosTesis.tituloPosgrado;
+          }
+
           if (isFirst) {
-            // CASO A: Primera tesis -> Asignación Aleatoria Automática
             return from(
-              this.consultasService.saveTesisWithRandomAssignment(baseTesisData)
+              this.consultasService.saveTesisWithRandomAssignment(tesisData),
             );
           } else {
-            // CASO B: Ya tiene tesis -> Asignación Manual (Campos vacíos)
-            const manualTesisData = {
-              ...baseTesisData,
-              directorId: null,
-              directorName: 'Pendiente de asignar',
-              evaluationTeam: [],
-              assignmentMode: 'Manual',
-            };
-            return this.consultasService.saveTesis(manualTesisData);
+            tesisData.assignmentMode = 'Manual';
+            tesisData.isApproved = false;
+            return from(this.consultasService.saveTesis(tesisData));
           }
         }),
         catchError((error) => {
-          console.error('Error:', error);
-          this.alertaService.mostrarAlerta(
-            'error',
-            'Error al procesar',
-            error.message
-          );
+          this.alertaService.mostrarAlerta('error', 'Error', error.message);
           this.isCreatingTesis = false;
           return of(null);
-        })
+        }),
       )
       .subscribe((tesisId) => {
         if (tesisId) {
           this.alertaService.mostrarAlerta(
             'exito',
-            'Tesis Registrada',
-            'Se ha procesado su solicitud correctamente.'
+            'Registrada',
+            'Tesis creada correctamente.',
           );
           this.router.navigate(['/profile'], { queryParams: { tesisId } });
         }
@@ -202,7 +255,7 @@ export class InfoComponent implements OnInit {
     this.filteredTesis = this.tesisList.filter(
       (tesis) =>
         tesis.studentName.toLowerCase().includes(searchTermLower) ||
-        tesis.userId.toLowerCase().includes(searchTermLower)
+        tesis.userId.toLowerCase().includes(searchTermLower),
     );
   }
 
@@ -251,6 +304,7 @@ export class InfoComponent implements OnInit {
     if (file) {
       // Validar tipo de archivo si es necesario
       if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+        this.archivoSeleccionado = event.target.files[0];
         this.selectedFile = file;
         this.feedbackMessage = ''; // Limpiar mensaje anterior
         this.isError = false;
@@ -262,148 +316,324 @@ export class InfoComponent implements OnInit {
       }
     }
   }
+  get tesisActivas() {
+    return this.filteredTesis.filter(
+      (t) => t.status !== 'Pendiente de Aprobar' && t.status !== 'Rechazado',
+    );
+  }
+  get tesisPendientes() {
+    return this.filteredTesis.filter(
+      (t) => t.status === 'Pendiente de Aprobar',
+    );
+  }
 
-  processExcelFile(): void {
-    // Validaciones iniciales (archivo y rol seleccionados)
-    if (!this.selectedFile) {
-      this.feedbackMessage = 'Error: No hay archivo seleccionado.';
-      this.isError = true;
+  // 2. Función para Aprobar
+  aprobarTesis(tesisId: string): void {
+    const updateData = {
+      status: 'Faltante', // Cambia al estado inicial normal
+      isApproved: true,
+      approvedAt: new Date(),
+    };
+
+    this.consultasService
+      .updateTesisStatus(tesisId, updateData)
+      .then(() => {
+        this.alertaService.mostrarAlerta(
+          'exito',
+          'Aprobado',
+          'La tesis ha sido habilitada correctamente.',
+        );
+      })
+      .catch((error) => {
+        this.alertaService.mostrarAlerta(
+          'error',
+          'Error',
+          'No se pudo aprobar la tesis.',
+        );
+      });
+  }
+
+  // 3. Función para Rechazar
+  rechazarTesis(tesisId: string): void {
+    if (confirm('¿Está seguro de rechazar esta solicitud?')) {
+      this.consultasService.deleteTesis(tesisId).then(() => {
+        this.alertaService.mostrarAlerta(
+          'exito',
+          'Eliminado',
+          'La solicitud ha sido rechazada.',
+        );
+      });
+    }
+  }
+  async processFile() {
+    if (!this.selectedFile || !this.selectedRoleForUpload) {
+      this.feedbackMessage = 'Selecciona un archivo y un rol.';
       return;
     }
-    if (!this.selectedRoleForUpload) {
+
+    // Los docentes SIEMPRE necesitan un ciclo activo para sus materias
+    if (this.selectedRoleForUpload === 'docente' && !this.activeCycleId) {
       this.feedbackMessage =
-        'Error: Debes seleccionar un rol para asignar a los usuarios.';
-      this.isError = true;
-      return; // Detener si no se ha seleccionado rol
+        'No existe un ciclo académico activo para importar docentes.';
+      return;
     }
 
     this.isLoading = true;
-    this.feedbackMessage = 'Leyendo archivo...';
-    this.isError = false;
     const reader = new FileReader();
 
-    reader.onload = (e: any) => {
+    reader.onload = async (e: any) => {
       try {
         const workbook = XLSX.read(e.target.result, { type: 'binary' });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet);
+        const rows: any[] = XLSX.utils.sheet_to_json(
+          workbook.Sheets[workbook.SheetNames[0]],
+        );
 
-        if (!jsonData || jsonData.length === 0) {
-          throw new Error(
-            'El archivo Excel está vacío o no tiene el formato esperado.'
-          );
-        }
+        if (rows.length === 0) throw new Error('El archivo está vacío.');
 
-        this.feedbackMessage = `Archivo leído. Procesando ${jsonData.length} registros para el rol: ${this.selectedRoleForUpload}...`;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const seenEmails = new Set<string>();
+        const payload: any[] = [];
 
-        const requiredColumns = ['nombre', 'apellido', 'email'];
-        const firstRow = jsonData[0];
-        for (const col of requiredColumns) {
-          if (!(col in firstRow)) {
+        for (const [index, row] of rows.entries()) {
+          const fila = index + 2;
+
+          // Validaciones comunes (Nombre, Apellido, Email)
+          if (!row.email || !row.nombre || !row.apellido) {
             throw new Error(
-              `Falta la columna requerida: '${col}' en el archivo Excel.`
+              `Fila ${fila}: email, nombre y apellido son obligatorios`,
             );
           }
-        }
 
-        // Usar el rol seleccionado del <select>
-        const roleToAssign = this.selectedRoleForUpload;
+          const email = String(row.email).trim().toLowerCase();
+          if (!emailRegex.test(email))
+            throw new Error(`Fila ${fila}: email inválido`);
 
-        const usersToCreate = jsonData
-          .map((row) => {
-            // Validar que los campos no estén vacíos en la fila actual
-            if (!row.nombre || !row.apellido || !row.email) {
-              console.warn(
-                `Fila omitida por datos faltantes: ${JSON.stringify(row)}`
+          // OBJETO BASE (Común para todos)
+          let userEntry: any = {
+            email,
+            firstName: String(row.nombre).trim(),
+            lastName: String(row.apellido).trim(),
+            cedula: row.cedula ? String(row.cedula).trim() : null,
+            role: this.selectedRoleForUpload,
+          };
+
+          // LÓGICA ESPECÍFICA POR ROL
+          if (this.selectedRoleForUpload === 'docente') {
+            if (!row.asignatura || !row.paralelo) {
+              throw new Error(
+                `Fila ${fila}: Los docentes requieren Asignatura y Paralelo.`,
               );
-              // Puedes lanzar un error o simplemente omitir la fila
-              return null; // Marcar para filtrar después
             }
-            return {
-              firstName: String(row.nombre).trim(),
-              lastName: String(row.apellido).trim(),
-              email: String(row.email).trim().toLowerCase(),
-              role: roleToAssign, // Asignar el rol seleccionado
-              // El campo 'id' será añadido por el servicio addUser
-            };
-          })
-          .filter((user) => user !== null); // Filtrar filas marcadas como nulas (omitidas)
 
-        if (usersToCreate.length === 0) {
-          throw new Error(
-            'No se encontraron filas válidas con datos completos en el archivo.'
-          );
+            if (seenEmails.has(email)) continue;
+            seenEmails.add(email);
+
+            // Campos exclusivos de docente
+            userEntry.degree = row.titulo ? String(row.titulo).trim() : 'Abg.';
+            userEntry.tempData = {
+              subjectName: String(row.asignatura).trim(),
+              parallel: String(row.paralelo).trim().toUpperCase(),
+              modality: row.modalidad
+                ? String(row.modalidad).trim().toLowerCase()
+                : 'presencial',
+              cycleId: this.activeCycleId,
+            };
+          } else if (this.selectedRoleForUpload === 'estudiante') {
+            // Si es necesario proximamente
+          }
+
+          payload.push(userEntry);
         }
 
-        this.feedbackMessage = `Datos validados. Guardando ${usersToCreate.length} usuarios con rol '${roleToAssign}'...`;
-        this.saveUsersBatch(usersToCreate); // Llama a guardar
+        // ENVÍO AL SERVICIO CORRESPONDIENTE
+        if (this.selectedRoleForUpload === 'docente') {
+          await this.importService.saveUsersToAuthorized(payload);
+        } else {
+          await this.importService.saveUsersToAuthorized(payload);
+        }
+
+        this.isError = false;
+        this.feedbackMessage = `Éxito: ${payload.length} registros de ${this.selectedRoleForUpload} procesados.`;
       } catch (error: any) {
-        this.feedbackMessage = `Error al procesar el archivo: ${error.message}`;
         this.isError = true;
+        this.feedbackMessage = error.message || 'Error al importar.';
+      } finally {
         this.isLoading = false;
       }
     };
-    reader.onerror = (error) => {
-      this.feedbackMessage = `Error al leer el archivo: ${error}`;
-      this.isError = true;
-      this.isLoading = false;
-    };
+
     reader.readAsBinaryString(this.selectedFile);
   }
 
-  // saveUsersBatch sigue siendo igual, llamará al método addUser actualizado
-  async saveUsersBatch(users: any[]): Promise<void> {
-    this.feedbackMessage = `Guardando ${users.length} usuarios en Firestore...`;
-    let successCount = 0;
-    let errorCount = 0;
-    const errorMessages: string[] = [];
-
-    const promises = users.map((user) =>
-      this.consultasService
-        .addUser(user) // Llama al método addUser actualizado
-        .then(() => successCount++)
-        .catch((error) => {
-          // El error relanzado desde addUser se captura aquí
-          errorCount++;
-          // Usar el mensaje de error formateado desde addUser
-          errorMessages.push(
-            error.message || `Error desconocido procesando ${user.email}`
-          );
-        })
-    );
-
+  // Guardar un solo usuario manualmente
+  async saveManualUser() {
+    this.isLoading = true;
     try {
-      await Promise.all(promises);
+      // Aplicamos la misma "traducción" a inglés que usas en el Excel
+      const cleanUser = {
+        firstName: this.newUser.nombre.trim(),
+        lastName: this.newUser.apellido.trim(),
+        email: this.newUser.email.trim().toLowerCase(),
+        cedula: String(this.newUser.cedula).trim(),
+        role: this.selectedRoleForUpload,
+        degree: this.newUser.titulo ? this.newUser.titulo.trim() : null,
+        tempData: {
+          // <--- Agrupa esto igual que en el Excel
+          subjectName: this.newUser.asignatura
+            ? this.newUser.asignatura.trim()
+            : null,
+          parallel: this.newUser.paralelo
+            ? this.newUser.paralelo.trim().toUpperCase()
+            : null,
+          modality: this.newUser.modalidad
+            ? this.newUser.modalidad.trim().toLowerCase()
+            : 'presencial',
+          cycleId: this.activeCycleId,
+        },
+      };
 
-      this.feedbackMessage = `Proceso completado. ${successCount} usuarios guardados. ${errorCount} errores.`;
-      if (errorCount > 0) {
-        this.isError = true;
-        this.feedbackMessage += `\n--- Detalles de errores ---\n${errorMessages.join(
-          '\n'
-        )}`;
-        console.error('Errores detallados:', errorMessages);
-      } else {
-        this.isError = false;
-        this.alertaService.mostrarAlerta(
-          'exito',
-          'Usuarios registrados',
-          'Todos los usuarios fueron guardados correctamente.'
-        );
+      // Validar datos mínimos
+      if (!cleanUser.firstName || !cleanUser.email || !cleanUser.cedula) {
+        throw new Error('Por favor completa los campos obligatorios.');
       }
-    } catch (finalError: any) {
-      this.feedbackMessage = `Error inesperado durante el guardado: ${finalError.message}`;
+
+      await this.importService.saveUsersToAuthorized([cleanUser]);
+
+      this.isError = false;
+      this.feedbackMessage = 'Usuario creado y autorizado con éxito.';
+      this.showModal = false; // Cerrar al terminar
+      this.resetManualForm();
+    } catch (error: any) {
       this.isError = true;
+      this.feedbackMessage = error.message;
     } finally {
       this.isLoading = false;
-      this.selectedFile = null;
-      // Resetear el input file si es necesario
-      const fileInput = document.querySelector(
-        'input[type="file"]'
-      ) as HTMLInputElement;
-      if (fileInput) fileInput.value = '';
-      // No resetear el rol seleccionado para facilitar cargas múltiples con el mismo rol
-      // this.selectedRoleForUpload = null;
     }
+  }
+
+  resetManualForm() {
+    this.newUser = {
+      nombre: '',
+      apellido: '',
+      email: '',
+      cedula: '',
+      asignatura: '',
+      paralelo: '',
+      titulo: '',
+    };
+  }
+
+  openModal(thesis: any, action: 'approve' | 'reject'): void {
+    this.selectedThesis = thesis;
+    this.modalAction = action;
+    this.isModalVisible = true;
+    if (thesis.userId) {
+      this.consultasService
+        .getUserById(thesis.userId)
+        .pipe(take(1))
+        .subscribe((userData) => {
+          if (userData) {
+            this.selectedThesis = {
+              ...thesis,
+              studentEmail: userData.email,
+              studentId: userData.cedula || 'N/A',
+            };
+          }
+        });
+    }
+
+    if (action === 'approve') {
+      this.consultasService.getStaffWithWorkload().subscribe((data) => {
+        this.availableStaff = data;
+      });
+    }
+  }
+
+  get directorsList() {
+    return this.availableStaff.filter((member) => member.role === 'director');
+  }
+
+  get evaluatorsList() {
+    return this.availableStaff.filter((member) => member.role === 'evaluador');
+  }
+
+  confirmProcess(): void {
+    if (this.modalAction === 'approve') {
+      const director = this.availableStaff.find(
+        (d) => d.id === this.assignmentForm.directorId,
+      );
+      const evaluator = this.availableStaff.find(
+        (e) => e.id === this.assignmentForm.evaluatorId,
+      );
+
+      const updateData = {
+        status: 'Faltante',
+        isApproved: true,
+        directorId: director.id,
+        directorName: `${director.firstName} ${director.lastName}`,
+        directorEmail: director.email,
+        evaluatorId: evaluator.id,
+        evaluatorName: `${evaluator.firstName} ${evaluator.lastName}`,
+        evaluatorEmail: evaluator.email,
+        approvalDate: new Date(),
+      };
+
+      this.consultasService
+        .updateTesis(this.selectedThesis.id, updateData)
+        .subscribe(() => {
+          this.alertaService.mostrarAlerta(
+            'exito',
+            'Success',
+            'Thesis approved and staff assigned.',
+          );
+          this.closeModal();
+        });
+    } else if (this.modalAction === 'reject') {
+      const updateData = {
+        status: 'Rechazado',
+        isApproved: false,
+        rejectionReason: this.assignmentForm.rejectionReason,
+        rejectionDate: new Date(),
+      };
+
+      this.consultasService
+        .updateTesis(this.selectedThesis.id, updateData)
+        .subscribe(() => {
+          this.alertaService.mostrarAlerta(
+            'info',
+            'Rejected',
+            'Feedback sent to the student.',
+          );
+          this.closeModal();
+        });
+    }
+  }
+
+  closeModal(): void {
+    this.isModalVisible = false;
+    this.selectedThesis = null;
+    this.assignmentForm = {
+      directorId: '',
+      evaluatorId: '',
+      rejectionReason: '',
+    };
+  }
+
+  // Función para abrir el rechazo
+  verMotivoRechazo(tesis: any) {
+    if (tesis && tesis.rejectionReason) {
+      this.selectedRejectionReason = tesis.rejectionReason;
+      this.selectedThesis = tesis; // Para mostrar también info de la materia
+      this.isRejectionModalVisible = true;
+    } else {
+      // Caso de seguridad si no hay descripción
+      this.selectedRejectionReason =
+        'No se ha proporcionado un motivo específico. Por favor, contacte con secretaría.';
+      this.isRejectionModalVisible = true;
+    }
+  }
+
+  closeRejectionModal() {
+    this.isRejectionModalVisible = false;
   }
 }

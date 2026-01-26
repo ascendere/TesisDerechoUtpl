@@ -51,7 +51,7 @@ export class AdminDataComponent implements OnInit {
     private firestore: AngularFirestore,
     private storage: AngularFireStorage,
     private route: ActivatedRoute,
-    private alertaService: AlertaService
+    private alertaService: AlertaService,
   ) {
     this.currentDate = formatDate(new Date(), 'yyyy-MM-dd', 'en');
   }
@@ -100,18 +100,18 @@ export class AdminDataComponent implements OnInit {
         await this.consultasService.updateManualAssignment(
           this.tesisId,
           selectedProfessor,
-          role
+          role,
         );
         this.alertaService.mostrarAlerta(
           'exito',
           'Asignación Actualizada',
-          `Se ha asignado a ${selectedProfessor.firstName} correctamente.`
+          `Se ha asignado a ${selectedProfessor.firstName} correctamente.`,
         );
       } catch (error) {
         this.alertaService.mostrarAlerta(
           'error',
           'Error',
-          'No se pudo actualizar la asignación.'
+          'No se pudo actualizar la asignación.',
         );
       }
     }
@@ -127,14 +127,11 @@ export class AdminDataComponent implements OnInit {
           this.recuadros.director.correo = data.directorEmail || '';
           this.directorName = data.directorName || 'Nombre no disponible';
           this.recuadros.docente.correo = data.professorEmail || '';
-          // (Recomendado escalar a futuro)
-          if (data.evaluationTeam && data.evaluationTeam.length > 0) {
-            this.recuadros.equipoEvaluador.correo =
-              data.evaluationTeam[0].email || '';
-          }
+          this.recuadros.equipoEvaluador.correo = data.evaluatorEmail || '';
+
           if (data.directorId && this.directorsList.length > 0) {
             this.selectedDirector = this.directorsList.find(
-              (prof) => prof.id === data.directorId
+              (prof) => prof.id === data.directorId,
             );
           }
 
@@ -145,7 +142,7 @@ export class AdminDataComponent implements OnInit {
           ) {
             const evaluadorId = data.evaluationTeam[0].id;
             this.selectedEvaluator = this.evaluatorsList.find(
-              (prof) => prof.id === evaluadorId
+              (prof) => prof.id === evaluadorId,
             );
           }
         }
@@ -210,7 +207,7 @@ export class AdminDataComponent implements OnInit {
 
         const evidencias = querySnap.docs.map((doc) => doc.data() as any);
         const evidenciaMasReciente = evidencias.reduce((a, b) =>
-          new Date(a.fechaRegistro) > new Date(b.fechaRegistro) ? a : b
+          new Date(a.fechaRegistro) > new Date(b.fechaRegistro) ? a : b,
         );
 
         this.avanceDirectorAlCien = evidenciaMasReciente.porcentaje === 100;

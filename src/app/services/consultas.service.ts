@@ -4,7 +4,7 @@ import {
   AngularFirestoreCollection,
   DocumentData,
 } from '@angular/fire/compat/firestore';
-import { Observable, combineLatest, of, finalize } from 'rxjs';
+import { Observable, combineLatest, of, finalize, forkJoin } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
 import Class from '../interfaces/classes.interface';
 import User from '../interfaces/user.interface';
@@ -19,6 +19,7 @@ import {
 } from 'firebase/auth';
 import { initializeApp, deleteApp } from 'firebase/app';
 import { environment } from '../../environments/environment';
+import { take } from 'rxjs/operators';
 import DocumentReference = firebase.firestore.DocumentReference;
 
 @Injectable({
@@ -29,7 +30,7 @@ export class ConsultasService {
   constructor(
     private firestore: AngularFirestore,
     private storage: AngularFireStorage,
-    private afAuth: AngularFireAuth
+    private afAuth: AngularFireAuth,
   ) {
     this.usersCollection = firestore.collection<User>('users');
   }
@@ -51,9 +52,10 @@ export class ConsultasService {
           const classObservables = classes.map((classItem) =>
             this.firestore
               .collection<User>('users')
-              .doc(classItem.userId)
+              .doc(classItem.professorId)
               .valueChanges()
               .pipe(
+                take(1),
                 map((user) => ({
                   ...classItem,
                   professorName: user
@@ -61,13 +63,13 @@ export class ConsultasService {
                     : 'Desconocido',
                   professorEmail: user ? user.email : '',
                   professorId: user ? user.id : '',
-                }))
-              )
+                })),
+              ),
           );
           return classObservables.length
             ? combineLatest(classObservables)
             : of([]);
-        })
+        }),
       );
   }
 
@@ -92,7 +94,7 @@ export class ConsultasService {
           // Buscar el nombre del profesor asociado a la clase
           return this.firestore
             .collection<User>('users')
-            .doc(classData.userId)
+            .doc(classData.professorId)
             .valueChanges()
             .pipe(
               map((user) => ({
@@ -102,9 +104,9 @@ export class ConsultasService {
                   : 'Desconocido',
                 professorEmail: user ? user.email : '',
                 professorId: user ? user.id : '',
-              }))
+              })),
             );
-        })
+        }),
       );
   }
 
@@ -125,11 +127,22 @@ export class ConsultasService {
       });
   }
 
+  getClassByIdForProfile(id: string): Observable<any> {
+    return this.firestore
+      .collection('classes')
+      .doc(id)
+      .valueChanges()
+      .pipe(
+        map((data: any) => (data ? { id, ...data } : null)),
+        take(1),
+      );
+  }
+
   // Método para subir una imagen a Firebase Storage
   uploadImage(
     userId: string,
     file: File,
-    folder: string
+    folder: string,
   ): Observable<string | null> {
     const filePath = `${folder}/${userId}_${file.name}`;
     const fileRef = this.storage.ref(filePath);
@@ -149,9 +162,9 @@ export class ConsultasService {
               (error) => {
                 observer.next(null); // En caso de error, devuelve `null` en lugar de undefined
                 observer.complete();
-              }
+              },
             );
-          })
+          }),
         )
         .subscribe();
     });
@@ -173,14 +186,22 @@ export class ConsultasService {
             const data = a.payload.doc.data() as object; // Aseguramos que 'data' sea un objeto
             const id = a.payload.doc.id;
             return { id, ...data };
-          })
-        )
+          }),
+        ),
       );
   }
 
   // Método para obtener los datos personales de un usuario por su userId
   getPersonalDataByUserId(userId: string): Observable<any> {
     return this.firestore.collection('personalData').doc(userId).valueChanges();
+  }
+
+  getUserById(id: string): Observable<any> {
+    return this.firestore
+      .collection('users')
+      .doc(id)
+      .valueChanges()
+      .pipe(take(1));
   }
 
   // Método para guardar un documento en la colección 'tesis'
@@ -205,7 +226,7 @@ export class ConsultasService {
       .doc(tesisId)
       .valueChanges()
       .pipe(
-        map((tesis: any) => (tesis ? tesis.personalData : null)) // Accede a personalData directamente
+        map((tesis: any) => (tesis ? tesis.personalData : null)), // Accede a personalData directamente
       );
   }
 
@@ -243,7 +264,7 @@ export class ConsultasService {
       .doc(tesisId)
       .set(updatedData, { merge: true })
       .then(() =>
-        console.log('Datos actualizados correctamente en el atributo "ciclo"')
+        console.log('Datos actualizados correctamente en el atributo "ciclo"'),
       )
       .catch((error) => console.error('Error al actualizar:', error));
   }
@@ -289,8 +310,8 @@ export class ConsultasService {
             const data = a.payload.doc.data() as object;
             const id = a.payload.doc.id;
             return { id, ...data };
-          })
-        )
+          }),
+        ),
       );
   }
 
@@ -300,24 +321,52 @@ export class ConsultasService {
       .doc(tesisId)
       .valueChanges()
       .pipe(
-        map((tesis: any) => (tesis ? tesis.personalData : null)) // Accede a personalData directamente
+        map((tesis: any) => (tesis ? tesis.personalData : null)), // Accede a personalData directamente
       );
   }
 
-  getTesisByUserId(userId: string | null): Observable<any[]> {
-    if (!userId) return of([]); // Retorna un array vacío si userId es null
+  getTesisByUser(userId: string, role: string | null): Observable<any[]> {
+    if (!role) return of([]);
 
     return this.firestore
-      .collection('tesis', (ref) => ref.where('userId', '==', userId))
+      .collection('tesis', (ref) => {
+        let query: any = ref;
+
+        switch (role) {
+          case 'estudiante':
+            query = query.where('userId', '==', userId);
+            break;
+
+          case 'docente':
+            query = query.where('professorId', '==', userId);
+            break;
+
+          case 'director':
+            query = query.where('directorId', '==', userId);
+            break;
+          case 'evaluador':
+            query = query.where('evaluatorId', '==', userId);
+            break;
+
+          case 'secretario':
+            // ve todas
+            break;
+
+          default:
+            // por seguridad, no devuelve nada
+            query = query.where('userId', '==', '__none__');
+        }
+
+        return query;
+      })
       .snapshotChanges()
       .pipe(
         map((actions) =>
-          actions.map((a) => {
-            const data = a.payload.doc.data() as any;
-            const id = a.payload.doc.id;
-            return { id, ...data };
-          })
-        )
+          actions.map((a) => ({
+            id: a.payload.doc.id,
+            ...(a.payload.doc.data() as any),
+          })),
+        ),
       );
   }
 
@@ -331,8 +380,8 @@ export class ConsultasService {
             const data = a.payload.doc.data() as any;
             const id = a.payload.doc.id;
             return { id, ...data };
-          })
-        )
+          }),
+        ),
       );
   }
 
@@ -369,7 +418,7 @@ export class ConsultasService {
       const credential = await createUserWithEmailAndPassword(
         secondaryAuth,
         userData.email,
-        userData.email // Password temporal (puedes cambiarlo a una lógica más compleja)
+        userData.email, // Password temporal (puedes cambiarlo a una lógica más compleja)
       );
 
       const uid = credential.user.uid;
@@ -405,13 +454,13 @@ export class ConsultasService {
     thesisId: string,
     role: string,
     amount: number = 1,
-    maxLoad: number = 3
+    maxLoad: number = 3,
   ): Promise<void> {
     try {
       // 1. Fetch all available staff with the specific role under the load limit
       const staffSnapshot = await this.firestore
         .collection('users', (ref) =>
-          ref.where('role', '==', role).where('currentLoad', '<', maxLoad)
+          ref.where('role', '==', role).where('currentLoad', '<', maxLoad),
         )
         .get()
         .toPromise();
@@ -463,7 +512,7 @@ export class ConsultasService {
 
       await batch.commit();
       console.log(
-        `Successfully assigned ${amount} ${role}(s) to thesis ${thesisId}`
+        `Successfully assigned ${amount} ${role}(s) to thesis ${thesisId}`,
       );
     } catch (error) {
       console.error('Error in assignRandomStaff:', error);
@@ -491,10 +540,10 @@ export class ConsultasService {
     try {
       // 1. Consultas con logs de depuración
       const dirRef = this.firestore.collection('users', (ref) =>
-        ref.where('role', '==', 'director').where('currentLoad', '<', 3)
+        ref.where('role', '==', 'director').where('currentLoad', '<', 3),
       );
       const evRef = this.firestore.collection('users', (ref) =>
-        ref.where('role', '==', 'evaluador').where('currentLoad', '<', 3)
+        ref.where('role', '==', 'evaluador').where('currentLoad', '<', 3),
       );
 
       const [dirSnap, evSnap] = await Promise.all([
@@ -509,12 +558,12 @@ export class ConsultasService {
       // 2. Validación detallada
       if (!dirSnap || dirSnap.empty) {
         throw new Error(
-          'No se encontraron usuarios con role "director" y currentLoad < 3'
+          'No se encontraron usuarios con role "director" y currentLoad < 3',
         );
       }
       if (!evSnap || evSnap.empty) {
         throw new Error(
-          'No se encontraron usuarios con role "evaluador" y currentLoad < 3'
+          'No se encontraron usuarios con role "evaluador" y currentLoad < 3',
         );
       }
 
@@ -533,13 +582,9 @@ export class ConsultasService {
         directorId: randomDirDoc.id,
         directorName: `${dirData.firstName} ${dirData.lastName}`,
         directorEmail: dirData.email,
-        evaluationTeam: [
-          {
-            id: randomEvDoc.id,
-            name: `${evData.firstName} ${evData.lastName}`,
-            email: evData.email,
-          },
-        ],
+        evaluatorId: randomEvDoc.id,
+        evaluatorName: `${evData.firstName} ${evData.lastName}`,
+        evaluatorEmail: evData.email,
         assignmentMode: 'Automatic',
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       };
@@ -569,7 +614,7 @@ export class ConsultasService {
   async updateManualAssignment(
     thesisId: string,
     professor: any,
-    role: 'director' | 'evaluador'
+    role: 'director' | 'evaluador',
   ): Promise<void> {
     const fullName = `${professor.firstName} ${professor.lastName}`;
     let updateData: any = {};
@@ -593,5 +638,63 @@ export class ConsultasService {
     }
 
     return this.firestore.collection('tesis').doc(thesisId).update(updateData);
+  }
+
+  updateTesisStatus(tesisId: string, data: any): Promise<void> {
+    return this.firestore.collection('tesis').doc(tesisId).update(data);
+  }
+
+  deleteTesis(tesisId: string): Promise<void> {
+    return this.firestore.collection('tesis').doc(tesisId).delete();
+  }
+
+  getSubjectById(id: string): Observable<any> {
+    return this.firestore
+      .collection('subjects')
+      .doc(id)
+      .valueChanges()
+      .pipe(take(1));
+  }
+
+  getStaffWithWorkload(): Observable<User[]> {
+    return this.firestore
+      .collection('users', (ref) =>
+        ref.where('role', 'in', ['director', 'evaluador']),
+      )
+      .valueChanges({ idField: 'id' })
+      .pipe(
+        take(1),
+        switchMap((staffList: any[]) => {
+          // Usamos any[] temporalmente aquí
+          if (staffList.length === 0) return of([]);
+
+          const workloadCounts$ = staffList.map((member) => {
+            // Ahora member es tratado como UserProfile para que member.role funcione
+            const staffMember = member as User;
+
+            const roleField =
+              staffMember.role === 'director' ? 'directorId' : 'evaluadorId';
+
+            return this.firestore
+              .collection('tesis', (ref) =>
+                ref
+                  .where(roleField, '==', staffMember.id)
+                  .where('status', '==', 'Aprobado'),
+              )
+              .valueChanges()
+              .pipe(
+                take(1),
+                map(
+                  (theses) =>
+                    ({
+                      ...staffMember,
+                      currentWorkload: theses.length,
+                    }) as User,
+                ), // Aseguramos el retorno como User
+              );
+          });
+          return forkJoin(workloadCounts$);
+        }),
+      );
   }
 }

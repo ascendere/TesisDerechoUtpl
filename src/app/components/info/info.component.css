@@ -110,6 +110,14 @@
   font-weight: bold;
 }
 
+.modalidad button.active {
+  background-color: #003F72; 
+  color: white;             /* Texto blanco */
+  border-color: #f1b400;     /* Borde oro para resaltar */
+  box-shadow: 0 4px 8px rgba(30, 45, 77, 0.3);
+}
+
+
 .abs{
   background-color: rgba(4, 65, 112, 1);
   color: white;
@@ -275,6 +283,9 @@ th {
 .faltante {
   color: red;
 }
+.rechazado {
+  color: red;
+}   
 
 .descargar-btn {
   background-color: rgba(4, 65, 112, 1);
@@ -298,3 +309,369 @@ th {
 
 
 
+
+
+.btn-aprobar {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 5px;
+}
+
+.btn-rechazar {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-aprobar:hover { background-color: #218838; }
+.btn-rechazar:hover { background-color: #c82333; }
+
+
+/* Estilo de Modal */
+
+/* --- Contenedor Principal del Modal --- */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.6); /* Fondo oscurecido más elegante */
+  backdrop-filter: blur(4px);    /* Efecto de desenfoque al fondo */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+
+}
+
+.modal-content {
+  background: #ffffff;
+  border-radius: 16px;
+  width: 95%;
+  max-width: 650px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  padding: 0; /* Controlamos el padding internamente */
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* --- Cabecera --- */
+.modal-header {
+  padding: 20px 30px;
+  border-bottom: 1px solid #edf2f7;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  color: #ffab02; /* Color institucional naranja */
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: #a0aec0;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.close-btn:hover { color: #e53e3e; }
+
+/* --- Cuerpo del Modal --- */
+.modal-body {
+  padding: 25px 30px;
+}
+
+h4 {
+  color: #044170; /* Azul institucional */
+  font-size: 1.1rem;
+  border-left: 4px solid #ffab02;
+  padding-left: 10px;
+  margin: 20px 0 15px 0;
+}
+
+/* --- Formulario y Inputs --- */
+.input-group { margin-bottom: 20px; }
+
+label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #4a5568;
+  margin-bottom: 8px;
+}
+
+select, input {
+  width: 100%;
+  padding: 12px 15px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+select:focus, input:focus {
+  border-color: #044170;
+  box-shadow: 0 0 0 3px rgba(4, 65, 112, 0.1);
+}
+
+/* --- Grid para campos de datos --- */
+.grid-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Dos columnas */
+  gap: 15px;
+}
+
+/* --- Sección de Excel --- */
+.excel-section {
+  background: #f8fafc;
+  border: 2px dashed #cbd5e0;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 25px;
+  text-align: center;
+}
+
+/* --- Botones --- */
+.btn-primary-custom {
+  background-color: rgba(4, 65, 112, 1);
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 15px;
+  margin-bottom: 10px;
+}
+.save-btn {
+  background: #044170;
+  color: #fff;
+  border: none;
+  padding: 14px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 10px;
+  transition: background 0.2s;
+}
+
+.save-btn:hover { background: #002d50; }
+
+.upload-btn {
+  background: #ffab02;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.upload-btn:hover { background: #e69a00; }
+
+/* --- Alertas --- */
+.alert {
+  padding: 12px;
+  margin: 15px 30px 25px;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.success { background: #c6f6d5; color: #22543d; border: 1px solid #9ae6b4; }
+.error { background: #fed7d7; color: #822727; border: 1px solid #feb2b2; }
+
+/* --- Responsividad --- */
+@media (max-width: 500px) {
+  .grid-form { grid-template-columns: 1fr; }
+}
+
+.excel-section p{
+  font-size: 10px;
+}
+.excel-section p a {
+  font-size: 10px;
+}
+/* --- Contenedor tipo card --- */
+.tesis-container {
+  background: #ffffff;
+  border-radius: 16px;
+  max-width: 95%;
+  margin: 40px auto;
+  padding: 30px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  animation: slideUp 0.3s ease-out;
+  width: 700px;
+}
+
+/* Título principal */
+.tesis-container h3 {
+  color: #ffab02;
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 25px;
+}
+
+/* Subtítulos */
+.tesis-container h4 {
+  color: #044170;
+  font-size: 1.1rem;
+  border-left: 4px solid #ffab02;
+  padding-left: 10px;
+  margin: 25px 0 15px;
+}
+
+/* Inputs y selects */
+.tesis-container input,
+.tesis-container select,
+.tesis-container textarea {
+  width: 100%;
+  padding: 12px 15px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 1rem;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.tesis-container textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.tesis-container input:focus,
+.tesis-container select:focus,
+.tesis-container textarea:focus {
+  border-color: #044170;
+  box-shadow: 0 0 0 3px rgba(4, 65, 112, 0.1);
+}
+
+/* Grid reutilizado */
+.grid-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+/* Modalidad */
+.modalidad {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.modalidad button {
+  flex: 1;
+  padding: 12px;
+  border-radius: 8px;
+  border: 2px solid #044170;
+  background: transparent;
+  color: #044170;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modalidad button:hover {
+  background: #044170;
+  color: #fff;
+}
+
+/* Separador */
+hr {
+  border: none;
+  border-top: 1px solid #edf2f7;
+  margin: 30px 0;
+}
+
+
+
+/* Forzar el ancho en el contenedor de tesis cuando es visualización */
+.tesis-container.rejection-view {
+  width: 80vw !important;    /* Ocupa el 80% del ancho de la pantalla */
+  max-width: 900px !important; 
+  min-width: 320px;
+  background: #ffffff;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+}
+
+.modal-header-custom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #edf2f7;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+}
+
+.rejection-box {
+  background-color: #fffaf0; /* Fondo crema suave para resaltar el texto */
+  border-left: 5px solid #ffab02; /* El amarillo institucional */
+  padding: 20px;
+  margin-top: 15px;
+}
+
+.rejection-title {
+  font-weight: bold;
+  color: #044170; /* Azul institucional */
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+}
+
+.reason-text {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: #2d3748;
+  white-space: pre-wrap; /* Mantiene los saltos de línea que hizo el secretario */
+}
+
+.btn-primary-dark {
+  background: #044170;
+  color: white;
+  padding: 10px 40px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  float: right;
+  margin-top: 20px;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .grid-form {
+    grid-template-columns: 1fr;
+  }
+
+  .modalidad {
+    flex-direction: column;
+  }
+}

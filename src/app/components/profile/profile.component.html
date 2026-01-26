@@ -2,10 +2,14 @@
 <app-text></app-text>
 <div class="profile-container">
   <div class="profile-header">
-    <img src="assets/img/Dr%201.png">
+    <img
+      [src]="professorPhoto || 'assets/noPhotoUser.jpeg'"
+      alt="Foto del profesor"
+      class="professor-photo"
+    />
     <div class="descripcionDocente">
       <h2>{{ professorName }}</h2>
-      <p>El proyecto tiene como objetivo principal la implementación de técnicas innovadoras de lectura crítica en el ámbito universitario, con el propósito de potenciar las habilidades analíticas y reflexivas de los estudiantes. Reconociendo la importancia fundamental de la lectura crítica en el proceso educativo, se busca proporcionar a los participantes las herramientas necesarias para abordar textos académicos de manera más efectiva. El proyecto tiene como objetivo principal la implementación de técnicas innovadoras de lectura crítica en el ámbito universitario, con el propósito de potenciar las habilidades analíticas y reflexivas de los estudiantes. Reconociendo la importancia fundamental de la lectura crítica en el proceso educativo, se busca proporcionar a los participantes las herramientas necesarias para abordar textos académicos de manera más efectiva.</p>
+      <p>{{ presentacion }}</p>
     </div>
   </div>
 
@@ -15,8 +19,9 @@
   </div>
 
   <div class="question-section">
-    <h3>{{ questions[currentQuestionIndex] }}</h3>
-    <input type="text" [(ngModel)]="currentAnswer" placeholder="Respuesta..."> <!-- Enlace bidireccional con ngModel -->
+    <h3>{{ questionsSubject[currentQuestionIndex] }}</h3>
+    <input type="text" [(ngModel)]="currentAnswer" placeholder="Respuesta..." />
+    <!-- Enlace bidireccional con ngModel -->
     <button (click)="nextQuestion()">{{ buttonText }}</button>
   </div>
 </div>

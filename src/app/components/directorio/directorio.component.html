@@ -1,0 +1,153 @@
+<app-header></app-header>
+<app-text></app-text>
+
+<div class="main-container">
+  <div class="tabs-header">
+    <button
+      (click)="viewMode = 'subjects'; search()"
+      [class.active]="viewMode === 'subjects'"
+    >
+      Materias
+    </button>
+    <button
+      (click)="viewMode = 'teachers'; search()"
+      [class.active]="viewMode === 'teachers'"
+    >
+      Docentes
+    </button>
+  </div>
+
+  <div class="search-section">
+    <input
+      type="text"
+      [(ngModel)]="searchTerm"
+      (keyup.enter)="search()"
+      placeholder="Escribe y presiona Enter..."
+    />
+    <button (click)="search()" class="btn-dark">Buscar</button>
+  </div>
+
+  <table class="utpl-table">
+    <thead>
+      <tr *ngIf="viewMode === 'teachers'">
+        <th>Foto</th>
+        <th>Nombre</th>
+        <th>Descripción / Biografía</th>
+        <th>Acciones</th>
+      </tr>
+      <tr *ngIf="viewMode === 'subjects'">
+        <th>Nombre Materia</th>
+        <th>Descripción Académica</th>
+        <th>Preguntas</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr *ngFor="let item of data$ | async">
+        <!-- DOCENTES (LECTURA) -->
+        <ng-container *ngIf="viewMode === 'teachers'">
+          <td>
+            <img
+              [src]="item.photoURL || 'assets/no-user.png'"
+              class="img-docente"
+            />
+          </td>
+
+          <td>
+            <strong>{{ item.firstName }} {{ item.lastName }}</strong>
+          </td>
+
+          <td>
+            <p class="text-readonly">
+              {{ item.description || "Sin descripción" }}
+            </p>
+          </td>
+        </ng-container>
+
+        <!-- MATERIAS (LECTURA) -->
+        <ng-container *ngIf="viewMode === 'subjects'">
+          <td>
+            <strong>{{ item.name }}</strong>
+          </td>
+
+          <td>
+            <p class="text-readonly">
+              {{ item.description || "Sin descripción académica" }}
+            </p>
+          </td>
+
+          <td>
+            <span class="badge">
+              {{ item.questions?.length || 0 }} preguntas
+            </span>
+          </td>
+        </ng-container>
+
+        <!-- ACCIONES -->
+        <td>
+          <button class="btn-save" (click)="openEditModal(item)">Editar</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="modal-backdrop" *ngIf="showEditModal">
+  <div class="modal-container">
+    <h3 *ngIf="editMode === 'teacher'">Editar docente</h3>
+    <h3 *ngIf="editMode === 'subject'">Editar materia</h3>
+
+    <!-- DOCENTE -->
+    <ng-container *ngIf="editMode === 'teacher'">
+      <img
+        [src]="selectedItem.photoURL || 'assets/no-user.png'"
+        class="img-docente-modal"
+      />
+
+      <input
+        type="file"
+        (change)="onFileSelected($event, selectedItem.id)"
+        #fileInput
+        hidden
+      />
+
+      <button class="upload-btn" (click)="fileInput.click()">
+        Cambiar foto
+      </button>
+      <textarea
+        [(ngModel)]="selectedItem.description"
+        placeholder="Biografía del docente"
+      ></textarea>
+    </ng-container>
+
+    <!-- MATERIA -->
+    <ng-container *ngIf="editMode === 'subject'">
+      <textarea
+        [(ngModel)]="selectedItem.description"
+        placeholder="Descripción académica"
+      ></textarea>
+
+      <div class="questions-list">
+        <div
+          class="question-item"
+          *ngFor="let q of selectedItem.questions; let i = index"
+        >
+          <textarea [(ngModel)]="selectedItem.questions[i]"></textarea>
+          <button (click)="selectedItem.questions.splice(i, 1)">
+            <p>Eliminar</p>
+          </button>
+        </div>
+
+        <button class="btn-add" (click)="selectedItem.questions.push('')">
+          + Agregar pregunta
+        </button>
+      </div>
+    </ng-container>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" (click)="closeModal()">Cancelar</button>
+      <button class="btn-save" (click)="saveModalChanges()">Guardar</button>
+    </div>
+  </div>
+</div>

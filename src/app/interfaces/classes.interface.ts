@@ -1,8 +1,9 @@
 export default interface Class {
   id: string;
-  name: string;
-  cicle: number;
+  subjectName: string;
+  parallel: string;
+  cicleId: String;
   type: string;
-  userId: string;
-  description: string;
+  professorId: string;
+  description?: string;
 }

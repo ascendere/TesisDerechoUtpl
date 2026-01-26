@@ -1,0 +1,84 @@
+/* Reutiliza todo tu CSS del login, pero cambia estas medidas específicas: */
+.body {
+  background: #fff;
+  border-radius: 15px;
+  padding: 30px 20px; /* Un poco más de espacio arriba y abajo */
+  width: 340px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+/* Asegúrate de tener estos estilos para que los inputs no se vean como texto simple */
+.input-container input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 16px;
+  box-sizing: border-box; /* Esto evita que el input se salga del cuadro blanco */
+}
+/* Centrado preciso */
+.login-container::before {
+  background: #ffab02;
+  transform: translate(-50%, -50%) rotate(-10deg);
+}
+
+.login-container::after {
+  background: #044170;
+  transform: translate(-50%, -50%) rotate(10deg);
+}
+
+.login-container::before, .login-container::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 340px;
+  height: 475px; 
+  border-radius: 15px;
+  z-index: -1;
+}
+
+
+.body {
+  background: #fff;
+  border-radius: 15px;
+  padding: 30px; 
+  width: 350px;
+  position: relative;
+}
+
+.subtitle {
+  text-align: center;
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 25px;
+}
+
+.footer-text {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 14px;
+}
+.login-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+  position: absolute; 
+}
+.login-button {
+  margin-top: 10px;
+  width: 100%;
+  padding: 10px;
+  background-color:#044170;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+h2{
+    text-align: center;
+}

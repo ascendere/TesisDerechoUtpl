@@ -19,6 +19,7 @@
   border-radius: 8px;
   width: 80%;
   margin: 0 auto;
+  position: relative;
 }
 
 .profile-header img {
@@ -31,18 +32,27 @@
 
 .descripcionDocente {
   text-align: left;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start; 
+  min-height: 280px;
 }
 
 .descripcionDocente h2 {
+  top: 15px;
   font-size: 24px;
   font-weight: 700;
   margin-bottom: 8px;
+  margin-top: 4px;
+  text-align: left;
 }
 
 .descripcionDocente p {
   font-size: 16px;
   line-height: 1.6;
   color: #555;
+  margin: 0 auto;
+  text-align: justify;
 }
 
 /* Título de la clase */

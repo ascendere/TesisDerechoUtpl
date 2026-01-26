@@ -3,23 +3,24 @@
 
 <div class="info-container">
   <h2>AT + 360 U-T-S</h2>
-  <img src="assets/img/linea%20con%20circulo.svg">
+  <img src="assets/img/linea%20con%20circulo.svg" />
   <h3>Información</h3>
 
   <div class="texto-introductorio">
     <p>
-      En un mundo en constante cambio, la educación se erige como la piedra angular del progreso y la adaptabilidad. En
-      este contexto, se están implementando estrategias innovadoras que buscan transformar la manera en que enseñamos y
-      aprendemos.
-      Desde el uso de tecnologías emergentes hasta enfoques pedagógicos vanguardistas, la revolución educativa está en
-      marcha. La integración de la inteligencia artificial en el aula no solo personaliza la experiencia de aprendizaje,
-      sino que también abre nuevas puertas a la creatividad y la resolución de problemas.
+      En un mundo en constante cambio, la educación se erige como la piedra
+      angular del progreso y la adaptabilidad. En este contexto, se están
+      implementando estrategias innovadoras que buscan transformar la manera en
+      que enseñamos y aprendemos. Desde el uso de tecnologías emergentes hasta
+      enfoques pedagógicos vanguardistas, la revolución educativa está en
+      marcha. La integración de la inteligencia artificial en el aula no solo
+      personaliza la experiencia de aprendizaje, sino que también abre nuevas
+      puertas a la creatividad y la resolución de problemas.
     </p>
   </div>
 
   <!-- Vista para estudiantes -->
   <div *ngIf="userRole === 'estudiante'" class="seleccion">
-
     <!-- Tabla con las tesis -->
     <div class="tabla-container">
       <table>
@@ -40,61 +41,186 @@
             <td>Facultad de Ciencias Jurídicas y Políticas</td>
             <td>Derecho</td>
             <td>{{ tesis.className }}</td>
-            <td [ngClass]="{'completado': tesis.status === 'Completado', 'faltante': tesis.status === 'Faltante'}">
+            <td
+              [ngClass]="{
+                completado: tesis.status === 'Completado',
+                faltante: tesis.status === 'Faltante',
+                rechazado: tesis.status === 'Rechazado',
+              }"
+            >
               {{ tesis.status }}
             </td>
-            <td [ngStyle]="{'color': tesis.progress < 100 ? 'red' : 'green'}">{{ tesis.progress }}%</td>
-            <td><a class="a" (click)="goToTracking(tesis.id)">Ver seguimiento</a></td>
+            <td [ngStyle]="{ color: tesis.progress < 100 ? 'red' : 'green' }">
+              {{ tesis.progress }}%
+            </td>
+            <td>
+              <a
+                class="a"
+                *ngIf="
+                  tesis.status !== 'Pendiente de Aprobar' &&
+                  tesis.status !== 'Rechazado'
+                "
+                (click)="goToTracking(tesis.id)"
+                >Ver seguimiento</a
+              >
+
+              <a
+                class="a"
+                *ngIf="tesis.status === 'Rechazado'"
+                (click)="verMotivoRechazo(tesis)"
+                >Ver comentario</a
+              >
+            </td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <br>
+    <br />
+    <button class="btn-primary-custom" (click)="showTesisModal = true">
+      Registrar Tesis
+    </button>
+    <div class="modal-overlay" *ngIf="showTesisModal">
+      <div class="modal-content">
+        <!-- HEADER -->
+        <div class="modal-header">
+          <h3>Registro de Tesis</h3>
+          <button class="close-btn" (click)="showTesisModal = false">
+            &times;
+          </button>
+        </div>
 
-    <div class="roles-selection">
-      <h1>Crear nueva tesis</h1>
+        <!-- BODY -->
+        <div class="modal-body">
+          <!-- Tipo de tesis -->
+          <div class="input-group">
+            <label>Tipo de Tesis</label>
+            <select [(ngModel)]="tipoTesis">
+              <option value="pregrado">Pregrado (Sentencia)</option>
+              <option value="posgrado">Posgrado (Título)</option>
+            </select>
+          </div>
 
-      <label for="cycle">Seleccionar ciclo:</label>
-      <select id="cycle" [(ngModel)]="selectedCycleId" name="cycle" required>
-        <option value="" disabled selected>-- Elige un ciclo --</option>
-        <option *ngFor="let ciclo of cycles" [value]="ciclo.id">{{ ciclo.name }}</option>
-      </select>
+          <!-- Pregrado -->
+          <div *ngIf="tipoTesis === 'pregrado'" class="grid-form">
+            <input
+              [(ngModel)]="datosTesis.numeroSentencia"
+              placeholder="Número de Sentencia"
+            />
+            <input [(ngModel)]="datosTesis.asunto" placeholder="Asunto" />
+          </div>
 
+          <!-- Posgrado -->
+          <div *ngIf="tipoTesis === 'posgrado'" class="input-group">
+            <input
+              [(ngModel)]="datosTesis.tituloPosgrado"
+              placeholder="Título de la Tesis"
+            />
+          </div>
+
+          <hr />
+
+          <!-- Ciclo -->
+          <div class="input-group">
+            <label>Seleccionar ciclo</label>
+            <select [(ngModel)]="selectedCycleId">
+              <option [ngValue]="null" disabled>-- Elige un ciclo --</option>
+              <option *ngFor="let ciclo of cycles" [ngValue]="ciclo.id">
+                {{ ciclo.name }}
+              </option>
+            </select>
+          </div>
+
+          <hr />
+
+          <!-- Modalidad -->
+          <h4>Modalidad</h4>
+          <div class="modalidad">
+            <button
+              type="button"
+              (click)="onModalityChange('presencial')"
+              [class.active]="selectedModality === 'presencial'"
+            >
+              Presencial
+            </button>
+            <button
+              type="button"
+              (click)="onModalityChange('distancia')"
+              [class.active]="selectedModality === 'distancia'"
+            >
+              Abierta y Distancia
+            </button>
+          </div>
+
+          <!-- Clase -->
+          <div class="input-group">
+            <label>Clase</label>
+            <select [(ngModel)]="selectedClass">
+              <option [ngValue]="null" disabled>Selecciona una opción</option>
+              <option *ngFor="let c of filteredClasses" [ngValue]="c.id">
+                {{ c.subjectName }} - Paralelo {{ c.parallel }} ({{
+                  c.professorName
+                }})
+              </option>
+            </select>
+          </div>
+
+          <!-- BOTÓN FINAL -->
+          <button
+            class="save-btn"
+            (click)="goToProfile()"
+            [disabled]="!isButtonEnabled()"
+          >
+            Iniciar
+          </button>
+        </div>
+      </div>
     </div>
-
-    <div class="modality-selection">
-      <label>Selecciona tu modalidad:</label>
-      <div class="modalidad">
-        <button (click)="onModalityChange('presencial')">Modalidad Presencial</button>
-        <button (click)="onModalityChange('distancia')">Modalidad Abierta y Distancia</button>
+  </div>
+  <div class="modal-overlay" *ngIf="isRejectionModalVisible">
+    <div class="tesis-container rejection-view">
+      <div class="modal-header-custom">
+        <h3>Detalles del Rechazo</h3>
+        <button class="close-btn" (click)="closeRejectionModal()">×</button>
       </div>
 
-      <div class="classes-select" *ngIf="filteredClasses$ | async as filteredClasses">
-        <select id="classes" [(ngModel)]="selectedClass">
-          <option value="" disabled [ngValue]="null">Selecciona una opción</option>
-          <option *ngFor="let classItem of filteredClasses" [value]="classItem.id">
-            {{ classItem.name }} - {{ classItem.cicle }}º ciclo (Profesor: {{ classItem.professorName }})
-          </option>
-        </select>
+      <div class="info-section">
+        <h4>Asignatura: {{ selectedThesis?.className }}</h4>
+        <h4>
+          Fecha:
+          {{ selectedThesis?.rejectionDate.toDate() | date: "dd/MM/yyyy" }}
+        </h4>
+        <div class="rejection-box">
+          <p class="rejection-title">Motivo informado por Secretaría:</p>
+          <div class="reason-text">
+            {{ selectedRejectionReason }}
+          </div>
+        </div>
       </div>
-    </div>
-    <br>
 
-    <div class="perfil-boton">
-      <button (click)="goToProfile()" [disabled]="!isButtonEnabled()" class="profile-button">
-        Iniciar
-      </button>
+      <div class="modal-footer-simple">
+        <button (click)="closeRejectionModal()" class="btn-primary-dark">
+          Entendido
+        </button>
+      </div>
     </div>
   </div>
 
   <!-- Vista para evaluadores, directores o docentes -->
-  <div *ngIf="['secretario', 'director', 'docente'].includes(userRole || '')" class="seguimiento">
+  <div
+    *ngIf="['secretario', 'director', 'docente'].includes(userRole || '')"
+    class="seguimiento"
+  >
     <h3>Seguimiento de Tesis</h3>
 
     <!-- Buscador -->
     <div class="buscador">
-      <input type="text" [(ngModel)]="searchTerm" placeholder="Nombre, identificación" (input)="onSearch()">
+      <input
+        type="text"
+        [(ngModel)]="searchTerm"
+        placeholder="Nombre, identificación"
+        (input)="onSearch()"
+      />
       <button (click)="onSearch()">Buscar</button>
     </div>
 
@@ -115,18 +241,27 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let tesis of filteredTesis">
+          <tr *ngFor="let tesis of tesisActivas">
             <td>{{ tesis.studentName }}</td>
             <td>{{ tesis.professorName }}</td>
             <td>Facultad de Ciencias Jurídicas y Políticas</td>
             <td>Derecho</td>
             <td>{{ tesis.userId }}</td>
             <td>{{ tesis.className }}</td>
-            <td [ngClass]="{'completado': tesis.status === 'Completado', 'faltante': tesis.status === 'Faltante'}">
+            <td
+              [ngClass]="{
+                completado: tesis.status === 'Completado',
+                faltante: tesis.status === 'Faltante',
+              }"
+            >
               {{ tesis.status }}
             </td>
-            <td [ngStyle]="{'color': tesis.progress < 100 ? 'red' : 'green'}">{{ tesis.progress }}%</td>
-            <td><a class="a" (click)="goToTracking(tesis.id)">Ver seguimiento</a></td>
+            <td [ngStyle]="{ color: tesis.progress < 100 ? 'red' : 'green' }">
+              {{ tesis.progress }}%
+            </td>
+            <td>
+              <a class="a" (click)="goToTracking(tesis.id)">Ver seguimiento</a>
+            </td>
           </tr>
         </tbody>
       </table>
@@ -135,36 +270,313 @@
     <button class="descargar-btn" (click)="downloadPDF()">Descargar</button>
   </div>
 
-  <div *ngIf="userRole === 'secretario'">
-    <h2>Gestión de Usuarios</h2>
-    <p>Carga un archivo Excel (.xlsx) con las columnas: <strong>nombre</strong>, <strong>apellido</strong>,
-      <strong>email</strong>.
+  <div *ngIf="userRole === 'secretario'" class="seguimiento">
+    <hr />
+    <h3>Tesis Pendientes de Aprobación</h3>
+    <br />
+    <p>
+      Las siguientes solicitudes corresponden a segundas tesis o casos
+      especiales que requieren validación.
     </p>
-
-    <div class="role-select" style="margin-bottom: 15px;">
-      <label for="role-select" style="margin-right: 10px;"><strong>Rol a asignar:</strong></label>
-      <select id="role-select" [(ngModel)]="selectedRoleForUpload">
-        <option [ngValue]="null" disabled>-- Selecciona un rol --</option>
-        <option value="director">Director</option>
-        <option value="equipo evaluador">Equipo Evaluador</option>
-      </select>
+    <div class="tabla-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Estudiante</th>
+            <th>Asignatura</th>
+            <th>Ciclo</th>
+            <th>Estado</th>
+            <th>Accion</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let tesis of tesisPendientes">
+            <td>{{ tesis.studentName }}</td>
+            <td>{{ tesis.className }}</td>
+            <td>{{ tesis.ciclo }}</td>
+            <td>
+              <span class="badge pendiente">{{ tesis.status }}</span>
+            </td>
+            <td>
+              <a class="a" (click)="goToTracking(tesis.id)">Ver seguimiento</a>
+            </td>
+            <td>
+              <button class="btn-aprobar" (click)="openModal(tesis, 'approve')">
+                Aprobar
+              </button>
+              <button class="btn-rechazar" (click)="openModal(tesis, 'reject')">
+                Rechazar
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="tesisPendientes.length === 0">
+            <td colspan="6" style="text-align: center">
+              No hay tesis pendientes de aprobación.
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
-
-    <div>
-      <input type="file" #fileInput (change)="onFileSelected($event)" accept=".xlsx, .xls">
-    </div>
-
-    <button (click)="processExcelFile()" [disabled]="!selectedFile || !selectedRoleForUpload || isLoading"
-      style="margin: 15px; padding: 10px;" class="abs">
-      {{ isLoading ? 'Procesando...' : 'Cargar Usuarios desde Archivo' }}
-    </button>
-
-    <div *ngIf="feedbackMessage" [ngClass]="{'success': !isError, 'error': isError}"
-      style="margin-top: 15px; white-space: pre-wrap;">
-      {{ feedbackMessage }}
-    </div>
+    <hr />
   </div>
 
+  <div class="modal-overlay" *ngIf="isModalVisible">
+    <div class="tesis-container">
+      <h3>Detalles de Solicitud</h3>
+
+      <div class="grid-form">
+        <div class="info-section full-width">
+          <h4>Información del Estudiante</h4>
+          <div class="data-row">
+            <p><strong>Nombre:</strong> {{ selectedThesis?.studentName }}</p>
+            <p>
+              <strong>Cédula:</strong> {{ selectedThesis?.studentId || "N/A" }}
+            </p>
+            <p>
+              <strong>Correo:</strong>
+              {{ selectedThesis?.studentEmail || "N/A" }}
+            </p>
+            <p>
+              <strong>Fecha Creación:</strong>
+              {{ selectedThesis?.createdAt.toDate() | date: "dd/MM/yyyy" }}
+            </p>
+          </div>
+        </div>
+
+        <div
+          class="info-section full-width"
+          *ngIf="selectedThesis?.tipo === 'pregrado'"
+        >
+          <h4>Detalles del Caso (Pregrado)</h4>
+          <div class="data-row">
+            <p>
+              <strong>Número de Sentencia:</strong>
+              {{ selectedThesis?.numeroSentencia }}
+            </p>
+            <p><strong>Asunto:</strong> {{ selectedThesis?.asunto }}</p>
+          </div>
+        </div>
+        <div
+          class="info-section full-width"
+          *ngIf="selectedThesis?.tipo === 'posgrado'"
+        >
+          <h4>Detalles del Caso (Posgrado)</h4>
+          <div class="data-row">
+            <p>
+              <strong>Titulo de Tesis:</strong>
+              {{ selectedThesis?.tituloTesis }}
+            </p>
+          </div>
+        </div>
+
+        <div class="info-section full-width">
+          <h4>Docente de la Asignatura</h4>
+          <div class="data-row">
+            <p><strong>Asignatura:</strong> {{ selectedThesis?.className }}</p>
+            <p>
+              <strong>Paralelo:</strong> {{ selectedThesis?.classParallel }}
+            </p>
+            <p><strong>Docente:</strong> {{ selectedThesis?.professorName }}</p>
+            <p><strong>Correo:</strong> {{ selectedThesis?.professorEmail }}</p>
+          </div>
+        </div>
+      </div>
+
+      <hr />
+
+      <div *ngIf="modalAction === 'approve'">
+        <div class="grid-form">
+          <div class="form-group">
+            <h4>Asignar Director de Tesis</h4>
+            <select [(ngModel)]="assignmentForm.directorId">
+              <option value="" disabled>Seleccione Director</option>
+              <option *ngFor="let d of directorsList" [value]="d.id">
+                {{ d.firstName }} {{ d.lastName }} - {{ d.email }} — ({{
+                  d.currentWorkload
+                }}
+                activas)
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <h4>Equipo Evaluador</h4>
+            <select [(ngModel)]="assignmentForm.evaluatorId">
+              <option value="" disabled>Seleccione Evaluador</option>
+              <option *ngFor="let e of evaluatorsList" [value]="e.id">
+                {{ e.firstName }} {{ e.lastName }} — {{ e.email }} — ({{
+                  e.currentWorkload
+                }}
+                activas)
+              </option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="modalAction === 'reject'">
+        <h4>Comentarios de Rechazo</h4>
+        <textarea
+          [(ngModel)]="assignmentForm.rejectionReason"
+          placeholder="Escriba aquí el motivo para informar al estudiante..."
+        ></textarea>
+      </div>
+
+      <div class="modalidad" style="margin-top: 30px">
+        <button type="button" (click)="closeModal()" class="btn-cancel">
+          Cancelar
+        </button>
+
+        <button
+          type="button"
+          (click)="confirmProcess()"
+          [disabled]="
+            modalAction === 'approve'
+              ? !assignmentForm.directorId || !assignmentForm.evaluatorId
+              : !assignmentForm.rejectionReason
+          "
+          style="background: #044170; color: white"
+        >
+          {{
+            modalAction === "approve"
+              ? "Publicar Aprobación"
+              : "Publicar Rechazo"
+          }}
+        </button>
+      </div>
+    </div>
+  </div>
+  <div *ngIf="userRole === 'secretario'">
+    <h2>Gestión de Usuarios</h2>
+
+    <button (click)="openCreateModal()" class="btn-primary-custom">
+      Crear nuevos usuarios / Importar Excel
+    </button>
+
+    <div class="modal-overlay" *ngIf="showModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Agregar Usuarios al Sistema</h3>
+          <button class="close-btn" (click)="showModal = false">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="input-group">
+            <label><strong>¿Qué tipo de usuario crearás?</strong></label>
+            <select [(ngModel)]="selectedRoleForUpload">
+              <option [ngValue]="null" disabled>-- Selecciona un rol --</option>
+              <option value="director">Director</option>
+              <option value="equipo evaluador">Equipo Evaluador</option>
+              <option value="estudiante">Estudiante</option>
+              <option value="docente">Docente</option>
+            </select>
+          </div>
+
+          <hr />
+
+          <div *ngIf="selectedRoleForUpload" class="manual-form">
+            <h4>Datos Personales</h4>
+            <div class="grid-form">
+              <input
+                type="text"
+                [(ngModel)]="newUser.nombre"
+                placeholder="Nombre (ej. Juan)"
+              />
+              <input
+                type="text"
+                [(ngModel)]="newUser.apellido"
+                placeholder="Apellido (ej. Pérez)"
+              />
+              <input
+                type="email"
+                [(ngModel)]="newUser.email"
+                placeholder="Correo electrónico"
+              />
+              <input
+                type="text"
+                [(ngModel)]="newUser.cedula"
+                placeholder="Cédula de identidad"
+              />
+            </div>
+
+            <div
+              *ngIf="selectedRoleForUpload === 'docente'"
+              class="extra-fields"
+            >
+              <h4>Datos Académicos</h4>
+              <div class="grid-form">
+                <input
+                  type="text"
+                  [(ngModel)]="newUser.asignatura"
+                  placeholder="Asignatura (ej. Derecho Penal)"
+                />
+                <input
+                  type="text"
+                  [(ngModel)]="newUser.paralelo"
+                  placeholder="Paralelo"
+                />
+                <input
+                  type="text"
+                  [(ngModel)]="newUser.titulo"
+                  placeholder="Título (ej. Mgtr)"
+                />
+                <input
+                  type="text"
+                  [(ngModel)]="newUser.modalidad"
+                  placeholder="Modalidad (ej. Presencial o Distancia)"
+                />
+              </div>
+            </div>
+
+            <button
+              (click)="saveManualUser()"
+              class="save-btn"
+              [disabled]="isLoading"
+            >
+              {{ isLoading ? "Guardando..." : "Guardar Individualmente" }}
+            </button>
+          </div>
+
+          <hr />
+
+          <div class="excel-section">
+            <h4>O cargar desde Excel</h4>
+            <p>
+              Descarga la plantilla de Excel
+              <a
+                href="https://firebasestorage.googleapis.com/v0/b/tesisderechoutpl.appspot.com/o/PlantillaUpload%2FPlantilla.xlsx?alt=media&token=34aafdb8-86f4-478d-800f-2c21cef1651c"
+                download
+                >aquí</a
+              >
+            </p>
+            <br />
+            <input
+              [disabled]="!selectedRoleForUpload"
+              type="file"
+              (change)="onFileSelected($event)"
+              accept=".xlsx, .xls"
+            />
+            <button
+              [disabled]="!selectedFile || !selectedRoleForUpload || isLoading"
+              (click)="processFile()"
+              class="upload-btn"
+            >
+              Importar Archivo
+            </button>
+          </div>
+        </div>
+
+        <div
+          *ngIf="feedbackMessage"
+          [ngClass]="{ success: !isError, error: isError }"
+          class="alert"
+        >
+          {{ feedbackMessage }}
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <app-footer></app-footer>

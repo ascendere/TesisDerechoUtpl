@@ -1,0 +1,385 @@
+/* ============================= */
+/* CONTENEDOR PRINCIPAL */
+/* ============================= */
+
+.main-container {
+  max-width: 1024px;
+  margin: 40px auto;
+  padding: 20px;
+}
+
+/* ============================= */
+/* TABS HEADER */
+/* ============================= */
+
+.tabs-header {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  margin-bottom: 30px;
+}
+
+.tabs-header button {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: #1A2434;
+  cursor: pointer;
+  padding-bottom: 6px;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.tabs-header button:hover {
+  color: #003F72;
+  font-weight: bold;
+}
+
+.tabs-header button.active {
+  color: #003F72;
+  font-weight: bold;
+  border-bottom: 3px solid #EAAB01;
+}
+
+/* ============================= */
+/* SEARCH SECTION */
+/* ============================= */
+
+.search-section {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 25px;
+}
+
+.search-section input {
+  width: 320px;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  background-color: #d9d9d9;
+  font-size: 14px;
+}
+
+.search-section button.btn-dark {
+  background-color: rgba(4, 65, 112, 1);
+  color: white;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.search-section button.btn-dark:hover {
+  background-color: #003F72;
+}
+
+/* ============================= */
+/* TABLE */
+/* ============================= */
+
+.utpl-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.utpl-table th,
+.utpl-table td {
+  border: 1.5px solid #000;
+  padding: 10px;
+  text-align: center;
+  vertical-align: middle;
+  font-size: 14px;
+}
+
+.utpl-table th {
+  background-color: #ffffff;
+  color: #003F72;
+  font-weight: bold;
+}
+
+/* ============================= */
+/* DOCENTE AVATAR */
+/* ============================= */
+
+.avatar-edit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.img-docente {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #003F72;
+}
+
+.avatar-edit button {
+  background-color: transparent;
+  border: none;
+  color: #003F72;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.avatar-edit button:hover {
+  font-weight: bold;
+}
+
+/* ============================= */
+/* TEXTAREA */
+/* ============================= */
+
+.utpl-table textarea {
+  width: 100%;
+  min-height: 70px;
+  resize: vertical;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1.5px solid #1A2434;
+  font-size: 13px;
+  outline: none;
+}
+
+.utpl-table textarea:focus {
+  border-color: #003F72;
+  box-shadow: 0 0 0 2px rgba(4, 65, 112, 0.1);
+}
+
+/* ============================= */
+/* SAVE BUTTON */
+/* ============================= */
+
+.btn-save {
+  background-color: rgba(4, 65, 112, 1);
+  color: white;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.btn-save:hover {
+  background-color: #003F72;
+  font-weight: bold;
+}
+
+/* ===== Overlay ===== */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 3000;
+}
+
+/* ===== Contenedor modal ===== */
+.modal-container {
+  background: #ffffff;
+  width: 95%;
+  max-width: 650px;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 16px;
+  padding: 30px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+  animation: modalUp 0.25s ease-out;
+}
+
+@keyframes modalUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ===== Título ===== */
+.modal-container h3 {
+  color: #ffab02;
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+/* ===== Imagen docente ===== */
+.img-docente-modal {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #044170;
+  display: block;
+  margin: 0 auto 15px;
+}
+
+/* ===== Botón subir foto ===== */
+.upload-btn {
+  display: block;
+  margin: 0 auto 25px;
+  background: #ffab02;
+  color: #ffffff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.upload-btn:hover {
+  background: #e69a00;
+}
+
+/* ===== Textareas ===== */
+.modal-container textarea {
+  width: 100%;
+  min-height: 90px;
+  padding: 12px 15px;
+  border-radius: 8px;
+  border: 2px solid #e2e8f0;
+  font-size: 0.95rem;
+  resize: vertical;
+  outline: none;
+  transition: all 0.2s ease;
+  margin-bottom: 15px;
+}
+
+.modal-container textarea:focus {
+  border-color: #044170;
+  box-shadow: 0 0 0 3px rgba(4, 65, 112, 0.12);
+}
+
+/* ===== Preguntas ===== */
+.questions-list {
+  margin-top: 15px;
+}
+
+.question-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.question-item textarea {
+  flex: 1;
+  min-height: 60px;
+}
+
+.question-item button {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.question-item button:hover {
+  background: #c82333;
+}
+
+/* ===== Agregar pregunta ===== */
+.btn-add {
+  background: transparent;
+  border: 2px dashed #044170;
+  color: #044170;
+  padding: 10px;
+  width: 100%;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.btn-add:hover {
+  background: rgba(4, 65, 112, 0.05);
+}
+
+/* ===== Acciones ===== */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 25px;
+}
+
+.btn-secondary {
+  background: #e2e8f0;
+  color: #1a202c;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background: #cbd5e0;
+}
+
+.btn-save {
+  background: #044170;
+  color: white;
+  border: none;
+  padding: 10px 25px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-save:hover {
+  background: #002d50;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 600px) {
+  .modal-container {
+    padding: 20px;
+  }
+
+  .modal-actions {
+    flex-direction: column;
+  }
+
+  .btn-save,
+  .btn-secondary {
+    width: 100%;
+  }
+}
+
+
+
+/* ============================= */
+/* RESPONSIVE */
+/* ============================= */
+
+@media (max-width: 768px) {
+  .tabs-header {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .search-section {
+    flex-direction: column;
+  }
+
+  .search-section input {
+    width: 100%;
+  }
+
+  .utpl-table textarea {
+    min-height: 90px;
+  }
+}

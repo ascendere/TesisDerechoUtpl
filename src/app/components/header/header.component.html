@@ -1,6 +1,6 @@
 <header>
   <div class="logo">
-    <img [routerLink]="['/home']" src="./assets/img/logo.svg" alt="Logo">
+    <img [routerLink]="['/home']" src="./assets/img/logo.svg" alt="Logo" />
   </div>
 
   <div class="menu-icon" (click)="toggleNav()">☰</div>
@@ -8,7 +8,12 @@
   <nav class="nav-bar" [class.active]="menuOpen">
     <a routerLink="/home">Inicio</a>
     <a routerLink="/info">Objetivo</a>
-    <a href="https://www.utpl.edu.ec/carreras/derecho" target="_blank">Carrera Derecho</a>
+    <a *ngIf="user?.role === 'secretario'" routerLink="/directorio"
+      >Directorio</a
+    >
+    <a href="https://www.utpl.edu.ec/carreras/derecho" target="_blank"
+      >Carrera Derecho</a
+    >
     <a href="https://www.utpl.edu.ec/" target="_blank">UTPL</a>
   </nav>
 
@@ -21,14 +26,18 @@
         </div>
         <div class="logout">
           <button (click)="logout()" [routerLink]="['']">
-            <img src="assets/img/Vector%20(4).svg" alt="Cerrar sesión">
+            <img src="assets/img/Vector%20(4).svg" alt="Cerrar sesión" />
           </button>
         </div>
       </div>
     </ng-container>
 
     <ng-template #loginButton>
-      <a><button class="boton" [routerLink]="['/login']">Iniciar Sesión</button></a>
+      <a
+        ><button class="boton" [routerLink]="['/login']">
+          Iniciar Sesión
+        </button></a
+      >
     </ng-template>
   </div>
 </header>
