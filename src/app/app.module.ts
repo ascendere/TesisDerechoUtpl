@@ -30,11 +30,14 @@ import { HeadingComponent } from './components/heading/heading.component';
 import { RubricaComponent } from './components/rubrica/rubrica.component';
 import { AuthGuard } from './guards/auth.guard';
 import { AlertaComponent } from './components/alerta/alerta.component';
+import { RegistroComponent } from './components/registro/registro.component';
+import { DirectorioComponent } from './components/directorio/directorio.component';
 
 const appRoutes: Routes = [
   { path: 'home', component: HomeComponent },
   { path: '', component: HomeComponent },
   { path: 'login', component: LoginComponent },
+  { path: 'register', component: RegistroComponent },
   { path: 'info', component: InfoComponent, canActivate: [AuthGuard] },
   { path: 'profile', component: ProfileComponent, canActivate: [AuthGuard] },
   {
@@ -47,6 +50,11 @@ const appRoutes: Routes = [
   { path: 'ciclo', component: CicloComponent, canActivate: [AuthGuard] },
   { path: 'flujo', component: FlujoComponent, canActivate: [AuthGuard] },
   { path: 'rubrica', component: RubricaComponent, canActivate: [AuthGuard] },
+  {
+    path: 'directorio',
+    component: DirectorioComponent,
+    canActivate: [AuthGuard],
+  },
 ];
 
 @NgModule({
@@ -69,6 +77,8 @@ const appRoutes: Routes = [
     HeadingComponent,
     RubricaComponent,
     AlertaComponent,
+    RegistroComponent,
+    DirectorioComponent,
   ],
   imports: [
     BrowserModule,
