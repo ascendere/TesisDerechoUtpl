@@ -66,67 +66,88 @@ button {
 .modal-content {
   background-color: white;
   border-radius: 40px;
-  width: 55%;
+  width: 60%;
+  max-width: 850px;
   text-align: center;
   font-family: Montserrat, sans-serif;
-  padding: 20px;
+  padding: 36px;
 }
 
 h2 {
-  font-size: 24px;
-  margin-bottom: 20px;
+  font-size: 20px;
+  margin-bottom: 15px;
 }
 
 .author-info, .periodo-info {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 15px;
+  margin-bottom: 8px;
+  font-size: 12px;
 }
 
 .form-group {
-  margin-bottom: 15px;
+  margin-bottom: 0;
   display: flex;
   flex-direction: column;
+  text-align: left;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  width: 100%;
+  margin-top: 20px;
+}
+
+.form-column {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .form-group label {
   font-weight: bold;
-  margin-bottom: 5px;
+  margin-bottom: 4px;
+  font-size: 12px;
 }
 
 .form-group input, .form-group select {
-  padding: 10px;
-  border: 1px solid #000;
+  padding: 12px 14px;
+  border: 1px solid #ccc;
   border-radius: 10px;
-  font-size: 14px;
+  font-size: 15px;
+  background-color: #fff;
+  color: #222;
+}
+
+.form-group select {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .form-group input[type="text"],
-.form-group input[type="date"] {
+.form-group input[type="date"],
+.form-group input[type="number"],
+.form-group select {
   width: 100%;
-}
-
-.file-upload {
-  margin-bottom: 15px;
-  display: flex;
-  flex-direction: column;
-}
-
-.file-upload input[type="file"] {
-  margin-top: 10px;
 }
 
 .modal-buttons {
   display: flex;
   justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
 }
 
 .cancel-btn, .submit-btn {
-  padding: 10px 20px;
+  padding: 9px 18px;
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   cursor: pointer;
-  margin: 20px;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .cancel-btn {
@@ -134,7 +155,39 @@ h2 {
   color: #044170;
 }
 
+.submit-btn {
+  background-color: #044170;
+  color: white;
+}
 
+.custom-file-upload {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed #ccc;
+  border-radius: 10px;
+  padding: 12px;
+  min-width: 220px;
+  max-width: 320px;
+  cursor: pointer;
+  color: #333;
+  font-size: 13px;
+  gap: 8px;
+  background-color: #fafafa;
+}
+
+.custom-file-upload img {
+  width: 15px;
+}
+
+.custom-file-upload:hover {
+  border-color: #0056b3;
+  background-color: #f9fcff;
+}
+
+input[type="file"] {
+  display: none;
+}
 .submit-btn {
   background-color: #044170;
   color: white;
@@ -182,14 +235,18 @@ h2 {
 
 .custom-file-upload {
   display: flex;
+  align-items: center;
+  justify-content: center;
   border: 1px dashed #ccc;
   border-radius: 10px;
-  padding: 10px;
-  width: 175px;
+  padding: 12px;
+  width: 220px;
   cursor: pointer;
   color: #333;
-  font-size: 11px;
-  gap: 5px;
+  font-size: 13px;
+  gap: 8px;
+  margin-top: 8px;
+  background-color: #fafafa;
 }
 
 .custom-file-upload img {
@@ -279,4 +336,40 @@ input[type="file"] {
 .form-group{
   display: flex;
   align-items: center;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.modal-header h2 {
+  margin: 0;
+  flex: 1;
+}
+
+.btn-download-matriz-header {
+  background-color: transparent;
+  color: #044170;
+  border: 2px dashed #044170;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.btn-download-matriz-header:hover {
+  background-color: #f0f0f0;
+  box-shadow: 0 2px 8px rgba(4, 65, 112, 0.2);
+}
+
+.porcentaje-input {
+  width: 80px !important;
+  text-align: center;
 }

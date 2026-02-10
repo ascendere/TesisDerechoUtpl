@@ -1,189 +1,482 @@
 <body>
   <div class="container">
     <h2>Rúbrica de Calificación</h2>
+    <p style="text-align: center">
+      Fecha de Actualización:
+      {{ rubricaLocal.fechaActualizacion.toDate() | date: "dd/MM/yyyy HH:mm" }}
+    </p>
     <table>
       <thead>
         <tr>
           <th>Aspectos a Evaluar</th>
           <th>Criterios</th>
           <th>Ponderación</th>
-          <th>Calificación</th>
+          <th *ngIf="esDirector">Calificación</th>
           <th>Total</th>
         </tr>
       </thead>
       <tbody>
         <tr>
           <td rowspan="3">Preliminares</td>
-          <td>EI informe contiene. portada, aprobación del Director de TT/ TIC: autoría y cesión de derechos,
-            dedicatoria, agradecimiento, índice de contenidos de acuerdo a los criterios de la UTPL.</td>
+          <td>
+            EI informe contiene. portada, aprobación del Director de TT/ TIC:
+            autoría y cesión de derechos, dedicatoria, agradecimiento, índice de
+            contenidos de acuerdo a los criterios de la UTPL.
+          </td>
           <td>0.6</td>
-          <td><input type="number" min="0" max="10" step="0.1"></td>
-          <td>-</td>
+          <td *ngIf="esDirector">
+            <input
+              type="number"
+              step="0.1"
+              [min]="0"
+              [max]="0.6"
+              [value]="rubricaLocal.prelim_portada || 0"
+              (input)="validarLocal($event, 0.6, 'prelim_portada')"
+            />
+          </td>
+          <td>{{ rubricaLocal.prelim_portada || "-" }}</td>
         </tr>
         <tr>
-          <td>Presenta eI resumen en 180 palabras y hace constar: tema de la Investigación, objetivo general, el lugar
-            donde se realizó la investigación, la muestra, los métodos, técnicas e instrumentos utilizados la conclusión
-            general de los resultados obtenidos en el, proceso investigativo y las palabras claves.</td>
+          <td>
+            Presenta eI resumen en 180 palabras y hace constar: tema de la
+            Investigación, objetivo general, el lugar donde se realizó la
+            investigación, la muestra, los métodos, técnicas e instrumentos
+            utilizados la conclusión general de los resultados obtenidos en el,
+            proceso investigativo y las palabras claves.
+          </td>
           <td>0.6</td>
-          <td><input type="number" min="0" max="10" step="0.1"></td>
-          <td>-</td>
+          <td *ngIf="esDirector">
+            <input
+              [min]="0"
+              [max]="0.6"
+              step="0.1"
+              type="number"
+              [value]="rubricaLocal.prelim_resumen || 0"
+              (input)="validarLocal($event, 0.6, 'prelim_resumen')"
+            />
+          </td>
+          <td>{{ rubricaLocal.prelim_resumen || "-" }}</td>
         </tr>
         <tr>
-          <td>Existe congruencia entre el resumen en español y la traducción al idioma inglés.</td>
+          <td>
+            Existe congruencia entre el resumen en español y la traducción al
+            idioma inglés.
+          </td>
           <td>0.3</td>
-          <td><input type="number" min="0" max="10" step="0.1"></td>
-          <td>-</td>
+          <td *ngIf="esDirector">
+            <input
+              *ngIf="esDirector"
+              type="number"
+              step="0.1"
+              [min]="0"
+              [max]="0.3"
+              [value]="rubricaLocal.prelim_congruencia || 0"
+              (input)="validarLocal($event, 0.3, 'prelim_congruencia')"
+            />
+          </td>
+          <td>{{ rubricaLocal.prelim_congruencia || "-" }}</td>
         </tr>
         <tr>
           <td rowspan="4">Introducción</td>
-          <td>Caracteriza de forma general el problema y presenta el tema investigado de forma clara y concreta.</td>
+          <td>
+            Caracteriza de forma general el problema y presenta el tema
+            investigado de forma clara y concreta.
+          </td>
           <td>0.2</td>
-          <td><input type="number" min="0" max="10" step="0.1"></td>
-          <td>-</td>
+          <td *ngIf="esDirector">
+            <input
+              *ngIf="esDirector"
+              type="number"
+              step="0.1"
+              [min]="0"
+              [max]="0.2"
+              [value]="rubricaLocal.intro_caracterizacion || 0"
+              (input)="validarLocal($event, 0.2, 'intro_caracterizacion')"
+            />
+          </td>
+          <td>{{ rubricaLocal.intro_caracterizacion || "-" }}</td>
         </tr>
         <tr>
-          <td>Hace referencia a investigaciones que se han realizado sobre la problemática presentada.</td>
+          <td>
+            Hace referencia a investigaciones que se han realizado sobre la
+            problemática presentada.
+          </td>
           <td>0.2</td>
-          <td><input type="number" min="0" max="10" step="0.1"></td>
-          <td>-</td>
+          <td *ngIf="esDirector">
+            <input
+              *ngIf="esDirector"
+              type="number"
+              step="0.1"
+              [min]="0"
+              [max]="0.2"
+              [value]="rubricaLocal.intro_referencia || 0"
+              (input)="validarLocal($event, 0.2, 'intro_referencia')"
+            />
+          </td>
+          <td>{{ rubricaLocal.intro_referencia || "-" }}</td>
         </tr>
         <tr>
-          <td>Describe claramente los contenidos de cada capítulo, Destaca la importancia que tiene el estudio para la
-            universidad y para la sociedad.</td>
+          <td>
+            Describe claramente los contenidos de cada capítulo, Destaca la
+            importancia que tiene el estudio para la universidad y para la
+            sociedad.
+          </td>
           <td>0.2</td>
-          <td><input type="number" min="0" max="10" step="0.1"></td>
-          <td>-</td>
+          <td *ngIf="esDirector">
+            <input
+              *ngIf="esDirector"
+              type="number"
+              step="0.1"
+              [min]="0"
+              [max]="0.2"
+              [value]="rubricaLocal.intro_contenidos || 0"
+              (input)="validarLocal($event, 0.2, 'intro_contenidos')"
+            />
+          </td>
+          <td>{{ rubricaLocal.intro_contenidos || "-" }}</td>
         </tr>
         <tr>
-          <td>Explica cómo dio respuesta al problema planteado y el cumplimiento de los objetivos. Detalla los recursos,
-            medios y motivaciones que hicieron posible el desarrollo del trabajo: además de las limitaciones que se
-            presentaron en el desarrollo del mismo.</td>
+          <td>
+            Explica cómo dio respuesta al problema planteado y el cumplimiento
+            de los objetivos. Detalla los recursos, medios y motivaciones que
+            hicieron posible el desarrollo del trabajo: además de las
+            limitaciones que se presentaron en el desarrollo del mismo.
+          </td>
           <td>0.4</td>
-          <td><input type="number" min="0" max="10" step="0.1"></td>
-          <td>-</td>
+          <td *ngIf="esDirector">
+            <input
+              *ngIf="esDirector"
+              type="number"
+              step="0.1"
+              [min]="0"
+              [max]="0.4"
+              [value]="rubricaLocal.intro_respuesta || 0"
+              (input)="validarLocal($event, 0.4, 'intro_respuesta')"
+            />
+          </td>
+          <td>{{ rubricaLocal.intro_respuesta || "-" }}</td>
         </tr>
         <tr>
           <td rowspan="3">Marco Teórico</td>
-          <td>Establece las relaciones de semejanza y diferencia entre los conceptos y aportes de los autores.</td>
-          <td>0.25</td>
-          <td><input type="number" min="0" max="10" step="0.1"></td>
-          <td>-</td>
-        </tr>
-        <tr>
-          <td>Presenta por lo menos 3 fuentes bibliográficas citadas de acuerdo a las normas APA.
+          <td>
+            Establece las relaciones de semejanza y diferencia entre los
+            conceptos y aportes de los autores.
           </td>
           <td>0.25</td>
-          <td><input type="number" min="0" max="10" step="0.1"></td>
-          <td>-</td>
+          <td *ngIf="esDirector">
+            <input
+              *ngIf="esDirector"
+              type="number"
+              step="0.1"
+              [min]="0"
+              [max]="0.25"
+              [value]="rubricaLocal.marco_teorico_relacion || 0"
+              (input)="validarLocal($event, 0.25, 'marco_teorico_relacion')"
+            />
+          </td>
+          <td>{{ rubricaLocal.marco_teorico_relacion || "-" }}</td>
         </tr>
         <tr>
-          <td>Realiza un análisis crítico y emite sus propias conclusiones en cada uno de los temas abordados.
+          <td>
+            Presenta por lo menos 3 fuentes bibliográficas citadas de acuerdo a
+            las normas APA.
+          </td>
+          <td>0.25</td>
+          <td *ngIf="esDirector">
+            <input
+              *ngIf="esDirector"
+              type="number"
+              step="0.1"
+              [min]="0"
+              [max]="0.25"
+              [value]="rubricaLocal.prelim_fuentes || 0"
+              (input)="validarLocal($event, 0.25, 'prelim_fuentes')"
+            />
+          </td>
+          <td>{{ rubricaLocal.prelim_fuentes || "-" }}</td>
+        </tr>
+        <tr>
+          <td>
+            Realiza un análisis crítico y emite sus propias conclusiones en cada
+            uno de los temas abordados.
           </td>
           <td>0.5</td>
-          <td><input type="number" min="0" max="10" step="0.1"></td>
-          <td>-</td>
+          <td *ngIf="esDirector">
+            <input
+              *ngIf="esDirector"
+              type="number"
+              step="0.1"
+              [min]="0"
+              [max]="0.5"
+              [value]="rubricaLocal.marco_teorico_analisis || 0"
+              (input)="validarLocal($event, 0.5, 'marco_teorico_analisis')"
+            />
+          </td>
+          <td>{{ rubricaLocal.marco_teorico_analisis || "-" }}</td>
         </tr>
         <tr>
           <td rowspan="3">Metodología</td>
-          <td>Incluye y desarrolla con claridad los objetivos generales y específicos.</td>
+          <td>
+            Incluye y desarrolla con claridad los objetivos generales y
+            específicos.
+          </td>
           <td>0.25</td>
-          <td><input type="number" min="0" max="10" step="0.1"></td>
-          <td>-</td>
+          <td *ngIf="esDirector">
+            <input
+              *ngIf="esDirector"
+              type="number"
+              step="0.1"
+              [min]="0"
+              [max]="0.25"
+              [value]="rubricaLocal.metodologia_desarrollo || 0"
+              (input)="validarLocal($event, 0.25, 'metodologia_desarrollo')"
+            />
+          </td>
+          <td>{{ rubricaLocal.metodologia_desarrollo || "-" }}</td>
         </tr>
         <tr>
-          <td>Plantea y desarrolla una metodología de investigación pertinente al problema.</td>
+          <td>
+            Plantea y desarrolla una metodología de investigación pertinente al
+            problema.
+          </td>
           <td>0.25</td>
-          <td><input type="number" min="0" max="10" step="0.1"></td>
-          <td>-</td>
+          <td *ngIf="esDirector">
+            <input
+              *ngIf="esDirector"
+              type="number"
+              step="0.1"
+              [min]="0"
+              [max]="0.25"
+              [value]="rubricaLocal.metodologia_planteamiento || 0"
+              (input)="validarLocal($event, 0.25, 'metodologia_planteamiento')"
+            />
+          </td>
+          <td>{{ rubricaLocal.metodologia_planteamiento || "-" }}</td>
         </tr>
         <tr>
-          <td>Describe las preguntas de investigación, el diseño, el contexto, la población, los métodos, las técnicas,
-            e instrumentos, procedimiento y recursos que fueron utilizados en la investigación.</td>
+          <td>
+            Describe las preguntas de investigación, el diseño, el contexto, la
+            población, los métodos, las técnicas, e instrumentos, procedimiento
+            y recursos que fueron utilizados en la investigación.
+          </td>
           <td>0.5</td>
-          <td><input type="number" min="0" max="10" step="0.1"></td>
-          <td>-</td>
+          <td *ngIf="esDirector">
+            <input
+              *ngIf="esDirector"
+              type="number"
+              step="0.1"
+              [min]="0"
+              [max]="0.5"
+              [value]="rubricaLocal.metodologia_descripcion || 0"
+              (input)="validarLocal($event, 0.5, 'metodologia_descripcion')"
+            />
+          </td>
+          <td>{{ rubricaLocal.metodologia_descripcion || "-" }}</td>
         </tr>
 
         <tr>
           <td rowspan="6">Resultados</td>
-          <td>Incluye tablas y figuras con sus respectivos títulos, fuentes y autores.</td>
+          <td>
+            Incluye tablas y figuras con sus respectivos títulos, fuentes y
+            autores.
+          </td>
           <td>0.2</td>
-          <td><input type="number" min="0" max="10" step="0.1"></td>
-          <td>-</td>
+          <td *ngIf="esDirector">
+            <input
+              *ngIf="esDirector"
+              type="number"
+              step="0.1"
+              [min]="0"
+              [max]="0.2"
+              [value]="rubricaLocal.resultados_tablas || 0"
+              (input)="validarLocal($event, 0.2, 'resultados_tablas')"
+            />
+          </td>
+          <td>{{ rubricaLocal.resultados_tablas || "-" }}</td>
         </tr>
         <tr>
-          <td>Presenta un análisis e interpretación d ellos resultados obtenidos.</td>
+          <td>
+            Presenta un análisis e interpretación d ellos resultados obtenidos.
+          </td>
           <td>0.3</td>
-          <td><input type="number" min="0" max="10" step="0.1"></td>
-          <td>-</td>
+          <td *ngIf="esDirector">
+            <input
+              *ngIf="esDirector"
+              type="number"
+              step="0.1"
+              [min]="0"
+              [max]="0.3"
+              [value]="rubricaLocal.resultados_analisis || 0"
+              (input)="validarLocal($event, 0.3, 'resultados_analisis')"
+            />
+          </td>
+          <td>{{ rubricaLocal.resultados_analisis || "-" }}</td>
         </tr>
         <tr>
           <td>Responden los resultados obtenidos a los objetivos planteados</td>
           <td>0.5</td>
-          <td><input type="number" min="0" max="10" step="0.1"></td>
-          <td>-</td>
+          <td *ngIf="esDirector">
+            <input
+              *ngIf="esDirector"
+              type="number"
+              step="0.1"
+              [min]="0"
+              [max]="0.5"
+              [value]="rubricaLocal.resultados_objetivos || 0"
+              (input)="validarLocal($event, 0.5, 'resultados_objetivos')"
+            />
+          </td>
+          <td>{{ rubricaLocal.resultados_objetivos || "-" }}</td>
         </tr>
         <tr>
-          <td>Confronta los resultados obtenidos con los fundamentos teóricos y los hechos de la realidad.</td>
-          <td>0.5</td>
-          <td><input type="number" min="0" max="10" step="0.1"></td>
-          <td>-</td>
-        </tr>
-        <tr>
-          <td>Contrasta los resultados obtenidos con información del marco teórico y de otras investigaciones.</td>
-          <td>0.5</td>
-          <td><input type="number" min="0" max="10" step="0.1"></td>
-          <td>-</td>
-        </tr>
-        <tr>
-          <td>Existe aporte personal.
-            Plantea una propuesta pertinente en razón de la problemática identificada (en el caso de solicitar)
+          <td>
+            Confronta los resultados obtenidos con los fundamentos teóricos y
+            los hechos de la realidad.
           </td>
           <td>0.5</td>
-          <td><input type="number" min="0" max="10" step="0.1"></td>
-          <td>-</td>
+          <td *ngIf="esDirector">
+            <input
+              *ngIf="esDirector"
+              type="number"
+              step="0.1"
+              [min]="0"
+              [max]="0.5"
+              [value]="rubricaLocal.resultados_confronta || 0"
+              (input)="validarLocal($event, 0.5, 'resultados_confronta')"
+            />
+          </td>
+          <td>{{ rubricaLocal.resultados_confronta || "-" }}</td>
+        </tr>
+        <tr>
+          <td>
+            Contrasta los resultados obtenidos con información del marco teórico
+            y de otras investigaciones.
+          </td>
+          <td>0.5</td>
+          <td *ngIf="esDirector">
+            <input
+              *ngIf="esDirector"
+              type="number"
+              step="0.1"
+              [min]="0"
+              [max]="0.5"
+              [value]="rubricaLocal.resultados_contraste || 0"
+              (input)="validarLocal($event, 0.5, 'resultados_contraste')"
+            />
+          </td>
+          <td>{{ rubricaLocal.resultados_contraste || "-" }}</td>
+        </tr>
+        <tr>
+          <td>
+            Existe aporte personal. Plantea una propuesta pertinente en razón de
+            la problemática identificada (en el caso de solicitar)
+          </td>
+          <td>0.5</td>
+          <td *ngIf="esDirector">
+            <input
+              *ngIf="esDirector"
+              type="number"
+              step="0.1"
+              [min]="0"
+              [max]="0.5"
+              [value]="rubricaLocal.resultados_aporte || 0"
+              (input)="validarLocal($event, 0.5, 'resultados_aporte')"
+            />
+          </td>
+          <td>{{ rubricaLocal.resultados_aporte || "-" }}</td>
         </tr>
         <tr>
           <td rowspan="2">Conclusiones</td>
           <td>Responden las concusiones a los objetivos del estudio.</td>
           <td>0.5</td>
-          <td><input type="number" min="0" max="10" step="0.1"></td>
-          <td>-</td>
+          <td *ngIf="esDirector">
+            <input
+              *ngIf="esDirector"
+              type="number"
+              step="0.1"
+              [min]="0"
+              [max]="0.5"
+              [value]="rubricaLocal.conclusiones_responden || 0"
+              (input)="validarLocal($event, 0.5, 'conclusiones_responden')"
+            />
+          </td>
+          <td>{{ rubricaLocal.conclusiones_responden || "-" }}</td>
         </tr>
         <tr>
-          <td>Son precisas, coherentes, pertinentes a los resultados obtenidos en la aplicación de los instrumentos.
+          <td>
+            Son precisas, coherentes, pertinentes a los resultados obtenidos en
+            la aplicación de los instrumentos.
           </td>
           <td>0.5</td>
-          <td><input type="number" min="0" max="10" step="0.1"></td>
-          <td>-</td>
+          <td *ngIf="esDirector">
+            <input
+              *ngIf="esDirector"
+              type="number"
+              step="0.1"
+              [min]="0"
+              [max]="0.5"
+              [value]="rubricaLocal.conclusiones_precisas || 0"
+              (input)="validarLocal($event, 0.5, 'conclusiones_precisas')"
+            />
+          </td>
+          <td>{{ rubricaLocal.conclusiones_precisas || "-" }}</td>
         </tr>
         <tr>
           <td rowspan="1">Recomendaciones</td>
           <td>Plantea las recomendaciones en función de las conclusiones.</td>
           <td>1</td>
-          <td><input type="number" min="0" max="10" step="0.1"></td>
-          <td>-</td>
+          <td *ngIf="esDirector">
+            <input
+              *ngIf="esDirector"
+              type="number"
+              step="0.1"
+              [min]="0"
+              [max]="1"
+              [value]="rubricaLocal.recomendaciones_funcion || 0"
+              (input)="validarLocal($event, 1, 'recomendaciones_funcion')"
+            />
+          </td>
+          <td>{{ rubricaLocal.recomendaciones_funcion || "-" }}</td>
         </tr>
         <tr>
           <td rowspan="2">Referencias Bibliograficas</td>
           <td>Utiliza bibliografía actualizada</td>
           <td>0.25</td>
-          <td><input type="number" min="0" max="10" step="0.1"></td>
-          <td>-</td>
+          <td *ngIf="esDirector">
+            <input
+              *ngIf="esDirector"
+              type="number"
+              step="0.1"
+              [min]="0"
+              [max]="0.25"
+              [value]="rubricaLocal.referencias_actualizada || 0"
+              (input)="validarLocal($event, 0.25, 'referencias_actualizada')"
+            />
+          </td>
+          <td>{{ rubricaLocal.referencias_actualizada || "-" }}</td>
         </tr>
         <tr>
           <td>Presenta en orden alfabeto utilizando las normes APA.</td>
           <td>0.25</td>
-          <td><input type="number" min="0" max="10" step="0.1"></td>
-          <td>-</td>
+          <td *ngIf="esDirector">
+            <input
+              *ngIf="esDirector"
+              type="number"
+              step="0.1"
+              [min]="0"
+              [max]="0.25"
+              [value]="rubricaLocal.referencias_orden || 0"
+              (input)="validarLocal($event, 0.25, 'referencias_orden')"
+            />
+          </td>
+          <td>{{ rubricaLocal.referencias_orden || "-" }}</td>
         </tr>
-
-
       </tbody>
     </table>
     <div>
-      <button class="save-btn">Guardar Calificaciones</button>
-
+      <button *ngIf="esDirector" (click)="guardarTodo()" class="save-btn">
+        Guardar Calificaciones
+      </button>
     </div>
   </div>
 </body>

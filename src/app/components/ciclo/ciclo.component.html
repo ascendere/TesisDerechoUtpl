@@ -2,111 +2,111 @@
 <app-text></app-text>
 <app-heading></app-heading>
 <app-bar></app-bar>
-<h2>Evaluación Ciclo Académico</h2>
+<div class="header-section">
+  <h3>Evaluación - Récord Académico</h3>
+  <div class="actions" *ngIf="esSecretario">
+    <input
+      type="file"
+      #fileInput
+      (change)="cargarExcel($event)"
+      hidden
+      accept=".xlsx, .xls"
+    />
+    <button class="btn-template" (click)="descargarPlantilla()">
+      <svg
+        class="icon-template"
+        xmlns="http://www.w3.org/2000/svg"
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="#044170"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+        <polyline points="7 10 12 15 17 10" />
+        <line x1="12" y1="15" x2="12" y2="3" />
+      </svg>
+      <span>Plantilla</span>
+    </button>
+    <button class="btn-upload" (click)="fileInput.click()">Subir Excel</button>
+    <button class="btn-add" *ngIf="!addingManual" (click)="addingManual = true">
+      + Agregar Materia
+    </button>
 
-<div class="container">
-  <div class="cont">
-    <!-- Materias Section -->
-    <div class="section">
-      <h3>Materias</h3>
-      <div class="grid">
-        <div>
-          <label for="practicum1">Practicum 1</label>
-          <select id="practicum1" [(ngModel)]="materias.practicum1" [disabled]="isReadOnly">
-            <option value="Aprobado">Aprobado</option>
-            <option value="Reprobado">Reprobado</option>
-          </select>
-        </div>
-        <div>
-          <label for="practicum2">Practicum 2</label>
-          <select id="practicum2" [(ngModel)]="materias.practicum2" [disabled]="isReadOnly">
-            <option value="Aprobado">Aprobado</option>
-            <option value="Reprobado">Reprobado</option>
-          </select>
-        </div>
-        <div>
-          <label for="gestion1">Gestión Productiva 1</label>
-          <select id="gestion1" [(ngModel)]="materias.gestion1" [disabled]="isReadOnly">
-            <option value="Aprobado">Aprobado</option>
-            <option value="Reprobado">Reprobado</option>
-          </select>
-        </div>
-        <div>
-          <label for="gestion2">Gestión Productiva 2</label>
-          <select id="gestion2" [(ngModel)]="materias.gestion2" [disabled]="isReadOnly">
-            <option value="Aprobado">Aprobado</option>
-            <option value="Reprobado">Reprobado</option>
-          </select>
-        </div>
-      </div>
-      <button *ngIf="!isReadOnly" (click)="guardarMaterias()">Enviar</button>
-      <button class="a" *ngIf="isReadOnly">{{ estadoMaterias || 'Pendiente' }}</button>
-    </div>
-
-    <!-- Bimestre Section -->
-    <div class="section">
-      <h3>Bimestre</h3>
-      <div class="grid">
-        <div>
-          <label for="primerBimestre">Primer Bimestre</label>
-          <input id="primerBimestre" type="number" [(ngModel)]="bimestres.primerBimestre" min="1" max="10" [disabled]="isReadOnly">
-        </div>
-        <div>
-          <label for="segundoBimestre">Segundo Bimestre</label>
-          <input id="segundoBimestre" type="number" [(ngModel)]="bimestres.segundoBimestre" min="1" max="10" [disabled]="isReadOnly">
-        </div>
-      </div>
-      <button *ngIf="!isReadOnly" (click)="guardarBimestres()">Enviar</button>
-      <button class="a" *ngIf="isReadOnly">{{ estadoBimestre || 'Pendiente' }}</button>
+    <div class="add-form" *ngIf="addingManual">
+      <input
+        class="input-add"
+        [(ngModel)]="newMateriaName"
+        placeholder="Nombre de la asignatura"
+      />
+      <button class="btn-add" (click)="agregarMateriaManual()">Agregar</button>
+      <button class="btn-upload" (click)="cancelAgregar()">Cancelar</button>
     </div>
   </div>
-
-  <div class="cont">
-    <!-- Fecha Avances Section -->
-    <div class="section-2">
-      <h3>Fecha Avances</h3>
-      <div class="grid">
-        <div>
-          <label for="primerAvance">Primer Avance</label>
-          <input id="primerAvance" type="date" [(ngModel)]="fechas.primerAvance" [disabled]="isReadOnly">
-        </div>
-        <div>
-          <label for="segundoAvance">Segundo Avance</label>
-          <input id="segundoAvance" type="date" [(ngModel)]="fechas.segundoAvance" [disabled]="isReadOnly">
-        </div>
-      </div>
-      <button *ngIf="!isReadOnly" (click)="guardarFechas()">Enviar</button>
-      <button class="a" *ngIf="isReadOnly">{{ estadoFechas || 'Pendiente' }}</button>
-    </div>
-
-    <!-- Aprobación Sections -->
-    <div class="section-2">
-      <h3>Aprobación</h3>
-      <div class="grid">
-        <div>
-          <label for="aprobacion1">Abril - Agosto</label>
-          <input id="aprobacion1" type="date" [(ngModel)]="fechas.aprobacion1" [disabled]="isReadOnly">
-        </div>
-      </div>
-      <button *ngIf="!isReadOnly" (click)="guardarAprobaciones()">Enviar</button>
-      <button class="a" *ngIf="isReadOnly">{{ estadoAprobacion1 || 'Pendiente' }}</button>
-    </div>
-
-    <!-- Aprobación Sections -->
-    <div class="section-2">
-      <h3>Aprobación</h3>
-      <div class="grid">
-        <div>
-          <label for="aprobacion2">Octubre - Febrero</label>
-          <input id="aprobacion2" type="date" [(ngModel)]="fechas.aprobacion2" [disabled]="isReadOnly">
-        </div>
-      </div>
-      <button *ngIf="!isReadOnly" (click)="guardarAprobaciones2()">Enviar</button>
-      <button class="a" *ngIf="isReadOnly">{{ estadoAprobacion2 || 'Pendiente' }}</button>
-    </div>
-  </div>
-
-
 </div>
-<app-footer2></app-footer2>
 
+<table class="record-table">
+  <thead>
+    <tr>
+      <th>Asignatura</th>
+      <th>Estado</th>
+      <th>Fecha Creación</th>
+      <th>Fecha Actualización</th>
+      <th *ngIf="esSecretario">Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let materia of listaMaterias; let i = index">
+      <td>
+        <ng-container *ngIf="esSecretario && materia.editando; else readName">
+          <input type="text" [(ngModel)]="materia.nombre" />
+        </ng-container>
+        <ng-template #readName>
+          <span>{{ materia.nombre }}</span>
+        </ng-template>
+      </td>
+      <td>
+        <ng-container *ngIf="esSecretario && materia.editando; else readEstado">
+          <select [(ngModel)]="materia.estado" [ngClass]="materia.estado">
+            <option value="Cumplido">Cumplido</option>
+            <option value="Pendiente">Pendiente</option>
+          </select>
+        </ng-container>
+        <ng-template #readEstado>
+          <span [ngClass]="materia.estado">{{ materia.estado }}</span>
+        </ng-template>
+      </td>
+      <td>{{ materia.fechaCreacion | date: "short" }}</td>
+      <td>{{ materia.fechaActualizacion | date: "short" }}</td>
+      <td *ngIf="esSecretario">
+        <div class="action-buttons">
+          <button
+            *ngIf="!materia.editando"
+            class="btn-edit"
+            (click)="materia.editando = true"
+          >
+            Editar
+          </button>
+          <button
+            *ngIf="materia.editando"
+            class="btn-save"
+            (click)="guardarCambios(materia)"
+          >
+            Guardar
+          </button>
+          <button class="btn-delete" (click)="confirmarEliminar(materia, i)">
+            Eliminar
+          </button>
+        </div>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<p *ngIf="listaMaterias.length === 0" class="empty-msg">
+  No hay materias registradas aún.
+</p>
+<app-footer2></app-footer2>

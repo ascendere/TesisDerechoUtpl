@@ -29,12 +29,24 @@ export class FlujoComponent implements OnInit {
   tesisId: string | null = null;
 
   isUploading: boolean = false;
+
+  // Tipos de evidencia disponibles
+  tiposEvidencia: string[] = [
+    'Preliminares',
+    'Resumen',
+    'Introducción',
+    'Cap. I: Revisión / Marco teórico',
+    'Cap. II: Metodología',
+    'Cap. III: Resultados y discusión',
+    'Conclusiones y Recomendaciones',
+    'Referencias',
+  ];
   constructor(
     private firestore: AngularFirestore,
     private storage: AngularFireStorage,
     private loginService: LoginService,
     private route: ActivatedRoute, // Inyecta el LoginService
-    private alertaService: AlertaService
+    private alertaService: AlertaService,
   ) {}
 
   ngOnInit(): void {
@@ -73,7 +85,7 @@ export class FlujoComponent implements OnInit {
             console.log('Evidencias cargadas:', this.evidencias);
             this.obtenerUltimosPorcentajes(); // Asegurar que se recalculan los porcentajes
           },
-          (error) => console.error('Error al cargar evidencias:', error)
+          (error) => console.error('Error al cargar evidencias:', error),
         );
     }
   }
@@ -90,7 +102,7 @@ export class FlujoComponent implements OnInit {
 
     // Filtrar evidencias de estudiantes
     const evidenciasEstudiante = this.evidencias.filter(
-      (e) => e.rol === 'estudiante' && e.porcentaje != null
+      (e) => e.rol === 'estudiante' && e.porcentaje != null,
     );
     this.ultimoPorcentajeEstudiante = evidenciasEstudiante.length
       ? Math.max(...evidenciasEstudiante.map((e) => Number(e.porcentaje) || 0))
@@ -98,12 +110,12 @@ export class FlujoComponent implements OnInit {
 
     console.log(
       '🎓 Último porcentaje estudiante:',
-      this.ultimoPorcentajeEstudiante
+      this.ultimoPorcentajeEstudiante,
     );
 
     // Filtrar evidencias de directores
     const evidenciasDirector = this.evidencias.filter(
-      (e) => e.rol === 'director' && e.porcentaje != null
+      (e) => e.rol === 'director' && e.porcentaje != null,
     );
     this.ultimoPorcentajeDirector = evidenciasDirector.length
       ? Math.max(...evidenciasDirector.map((e) => Number(e.porcentaje) || 0))
@@ -111,7 +123,7 @@ export class FlujoComponent implements OnInit {
 
     console.log(
       '📋 Último porcentaje director:',
-      this.ultimoPorcentajeDirector
+      this.ultimoPorcentajeDirector,
     );
   }
 
@@ -119,6 +131,19 @@ export class FlujoComponent implements OnInit {
   openAddDialog() {
     this.mostrarDialogoAgregar = true;
     this.form.fechaRegistro = new Date().toISOString().split('T')[0]; // Asigna la fecha actual en formato YYYY-MM-DD
+  }
+
+  // Descargar la matriz de categorías
+  descargarMatrizCategorias() {
+    const url =
+      'https://firebasestorage.googleapis.com/v0/b/tesisderechoutpl.appspot.com/o/PlantillaUpload%2FMatriz_categorias_para_un_proyecto_de_investigacion.docx?alt=media&token=c445f564-cfd2-4488-a1ce-5fbb1ed595a8';
+    const link = document.createElement('a');
+    link.href = url;
+    link.target = '_blank';
+    link.download = 'Matriz_categorias_para_un_proyecto_de_investigacion.docx';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
   // Cierra el modal sin guardar datos
@@ -141,20 +166,21 @@ export class FlujoComponent implements OnInit {
       this.alertaService.mostrarAlerta(
         'error',
         'Campos incompletos',
-        'Debes seleccionar un archivo y tener sesión iniciada para continuar.'
+        'Debes seleccionar un archivo y tener sesión iniciada para continuar.',
       );
       return;
     }
     if (
       !this.form.fechaRegistro ||
-      !this.form.descripcion ||
       !this.form.bimestre ||
+      !this.form.tipoEvidencia ||
+      !this.form.subcategoria ||
       this.form.porcentaje == null
     ) {
       this.alertaService.mostrarAlerta(
         'error',
         'Campos incompletos',
-        'Por favor, completa todos los campos del formulario.'
+        'Por favor, completa todos los campos del formulario.',
       );
       return;
     }
@@ -171,7 +197,7 @@ export class FlujoComponent implements OnInit {
       this.alertaService.mostrarAlerta(
         'error',
         `El porcentaje debe ser mayor a ${this.ultimoPorcentajeEstudiante}%`,
-        ''
+        '',
       );
       return;
     }
@@ -181,7 +207,7 @@ export class FlujoComponent implements OnInit {
       this.alertaService.mostrarAlerta(
         'error',
         'Porcentaje insuficiente',
-        `El porcentaje debe ser mayor a ${this.ultimoPorcentajeDirector}%`
+        `El porcentaje debe ser mayor a ${this.ultimoPorcentajeDirector}%`,
       );
       return;
     }
@@ -197,14 +223,14 @@ export class FlujoComponent implements OnInit {
             const nuevaEvidencia = {
               periodo: 'Oct/2023 - Feb/2024',
               bimestre: this.form.bimestre,
-              fechaRegistro: this.form.fechaRegistro,
-              descripcion: this.form.descripcion,
+              tipoEvidencia: this.form.tipoEvidencia,
+              subcategoria: this.form.subcategoria,
+              fechaRegistro: new Date().toISOString(),
               evidenciaUrl: downloadUrl,
               porcentaje: this.form.porcentaje,
               usuarioNombre: this.usuarioLoggeado?.firstName,
               usuarioApellido: this.usuarioLoggeado?.lastName,
               usuarioId: this.usuarioLoggeado?.id,
-              comentario: this.form.comentario,
               rol: this.usuarioLoggeado?.role,
             };
 
@@ -217,7 +243,7 @@ export class FlujoComponent implements OnInit {
                 this.alertaService.mostrarAlerta(
                   'exito',
                   'Evidencia guardada',
-                  'La evidencia fue registrada exitosamente.'
+                  'La evidencia fue registrada exitosamente.',
                 );
                 this.cerrarDialogo();
                 this.cargarEvidencias();
@@ -229,7 +255,7 @@ export class FlujoComponent implements OnInit {
                 this.alertaService.mostrarAlerta(
                   'error',
                   'Error al guardar',
-                  'No se pudo registrar la evidencia. Intenta nuevamente.'
+                  'No se pudo registrar la evidencia. Intenta nuevamente.',
                 );
                 console.error('Error al guardar evidencia:', error);
               });
@@ -239,7 +265,7 @@ export class FlujoComponent implements OnInit {
             this.alertaService.mostrarAlerta(
               'error',
               'Error al obtener URL del archivo',
-              'Hubo un problema al obtener el enlace del documento subido.'
+              'Hubo un problema al obtener el enlace del documento subido.',
             );
             console.error('Error al obtener downloadURL:', err);
           },
@@ -250,7 +276,7 @@ export class FlujoComponent implements OnInit {
         this.alertaService.mostrarAlerta(
           'error',
           'Error al subir archivo',
-          'No se pudo subir el archivo. Verifica tu conexión o intenta nuevamente.'
+          'No se pudo subir el archivo. Verifica tu conexión o intenta nuevamente.',
         );
         console.error('Error al subir archivo:', error);
       });
@@ -282,9 +308,9 @@ export class FlujoComponent implements OnInit {
             this.alertaService.mostrarAlerta(
               'error',
               'Error al cargar reuniones',
-              'Ocurrió un problema al intentar obtener las reuniones.'
+              'Ocurrió un problema al intentar obtener las reuniones.',
             );
-          }
+          },
         );
     }
   }
@@ -297,7 +323,7 @@ export class FlujoComponent implements OnInit {
       this.alertaService.mostrarAlerta(
         'info',
         'Permiso denegado',
-        'No tienes autorización para modificar la asistencia de esta reunión.'
+        'No tienes autorización para modificar la asistencia de esta reunión.',
       );
       return;
     }
@@ -313,8 +339,8 @@ export class FlujoComponent implements OnInit {
         this.alertaService.mostrarAlerta(
           'error',
           'Error al actualizar asistencia',
-          'No se pudo guardar la asistencia. Intenta nuevamente.'
-        )
+          'No se pudo guardar la asistencia. Intenta nuevamente.',
+        ),
       );
   }
 
@@ -322,7 +348,7 @@ export class FlujoComponent implements OnInit {
     this.documentoReunion = event.target.files[0];
     console.log(
       'Archivo de reunión seleccionado exitosamente:',
-      this.documentoReunion
+      this.documentoReunion,
     );
   }
 
@@ -335,7 +361,7 @@ export class FlujoComponent implements OnInit {
       this.alertaService.mostrarAlerta(
         'error',
         'ID de tesis no encontrado',
-        'No se encontró un ID válido de tesis para continuar.'
+        'No se encontró un ID válido de tesis para continuar.',
       );
       return;
     }
@@ -344,7 +370,7 @@ export class FlujoComponent implements OnInit {
       this.alertaService.mostrarAlerta(
         'error',
         'Sesión no iniciada',
-        'Debes iniciar sesión para realizar esta acción.'
+        'Debes iniciar sesión para realizar esta acción.',
       );
       return;
     }
@@ -353,7 +379,7 @@ export class FlujoComponent implements OnInit {
       this.alertaService.mostrarAlerta(
         'error',
         'Campos incompletos',
-        'Por favor, completa todos los campos antes de continuar.'
+        'Por favor, completa todos los campos antes de continuar.',
       );
       return;
     }
@@ -387,7 +413,7 @@ export class FlujoComponent implements OnInit {
                 this.alertaService.mostrarAlerta(
                   'exito',
                   'Reunión guardada',
-                  'La reunión fue registrada correctamente junto con la evidencia.'
+                  'La reunión fue registrada correctamente junto con la evidencia.',
                 );
                 this.cerrarReunionDialog();
                 this.isUploading = false;
@@ -397,8 +423,8 @@ export class FlujoComponent implements OnInit {
                 this.alertaService.mostrarAlerta(
                   'error',
                   'Error al guardar la reunión',
-                  'No se pudo guardar la información de la reunión.' + error
-                )
+                  'No se pudo guardar la información de la reunión.' + error,
+                ),
               );
           });
         })
@@ -406,8 +432,8 @@ export class FlujoComponent implements OnInit {
           this.alertaService.mostrarAlerta(
             'error',
             'Error al subir archivo',
-            'No se pudo subir el archivo. Intenta nuevamente.' + error
-          )
+            'No se pudo subir el archivo. Intenta nuevamente.' + error,
+          ),
         );
     } else {
       this.firestore
@@ -419,7 +445,7 @@ export class FlujoComponent implements OnInit {
           this.alertaService.mostrarAlerta(
             'exito',
             'Reunión guardada',
-            'La reunión fue registrada correctamente sin evidencia.'
+            'La reunión fue registrada correctamente sin evidencia.',
           );
           this.cerrarReunionDialog();
           this.cargarReuniones();
@@ -429,8 +455,8 @@ export class FlujoComponent implements OnInit {
           this.alertaService.mostrarAlerta(
             'error',
             'Error al guardar la reunión',
-            'Ocurrió un problema al guardar la información. Intenta más tarde.'
-          )
+            'Ocurrió un problema al guardar la información. Intenta más tarde.',
+          ),
         );
     }
   }

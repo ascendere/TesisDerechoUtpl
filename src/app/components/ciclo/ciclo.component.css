@@ -1,124 +1,234 @@
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 50px;
-}
-
-h2 {
-  text-align: center;
-  color: #333;
-  font-size: 24px;
-  margin-bottom: 40px;
-  margin-top: 20px;
-}
-
-/* Section Styles */
-.cont {
-  display: flex;
-  justify-content: space-around;
-  flex-wrap: wrap;
-  gap: 20px;
-}
-
-.section {
-  background-color: #fff;
-  border: 1.5px solid rgb(4, 65, 112);
-  border-radius: 10px;
-  padding: 20px;
-  flex: 1 1 calc(50% - 20px);
-  width: 741px;
-}
-
-.section-2{
-  background-color: #fff;
-  border: 1.5px solid rgb(4, 65, 112);
-  border-radius: 10px;
-  padding: 20px;
-  width: 372px;
-}
-
-h3 {
-  text-align: center;
-  color: #555;
-  margin-bottom: 20px;
-}
-
-.grid {
+/* Header Section */
+.header-section {
   display: flex;
   justify-content: space-between;
-  gap: 15px;
+  align-items: center;
+  margin: 20px auto;
+  padding: 0;
+  width: 95%;
 }
 
-.grid div {
-  flex: 1;
+.header-section h3 {
+  font-size: 24px;
+  color: #2c3e50;
+  margin: 20px 0;
   text-align: center;
+  font-weight: bold;
+  flex: 1;
 }
 
-label {
-  display: block;
-  font-size: 12.9px;
-  color: #555;
-  margin-bottom: 5px;
+.actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
 }
 
-select, input[type="number"], input[type="date"] {
+.btn-template {
+  background: transparent;
+  color: #044170;
+  border: 1px dashed #044170;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.btn-template:hover {
+  background: rgba(4, 65, 112, 0.06);
+}
+
+.btn-template {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-template {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+}
+
+/* Table Styles */
+.record-table {
+  width: 95%;
+  border-collapse: collapse;
+  margin: 20px auto;
+  background-color: white;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.record-table thead {
+  background-color: #f8f9fa;
+}
+
+.record-table th {
+  text-align: left;
+  padding: 15px;
+  border-bottom: 1px solid #ddd;
+  color: #5d6d7e;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.record-table td {
+  padding: 15px;
+  border-bottom: 1px solid #ddd;
+  text-align: left;
+  font-size: 14px;
+}
+
+.record-table tbody tr:hover {
+  background-color: #f1f1f1;
+}
+
+/* Input and Select Styles */
+.record-table input,
+.record-table select {
   width: 100%;
   padding: 8px;
   border: 1px solid #ccc;
-  border-radius: 5px;
+  border-radius: 4px;
   font-size: 14px;
-  color: #333;
-  background-color: #f9f9f9;
 }
 
-button {
+.record-table input:disabled,
+.record-table select:disabled {
+  background-color: #f9f9f9;
+  color: #666;
+}
+
+select.Cumplido {
+  background-color: #92FF9F;
+  color: #044170;
+  font-weight: bold;
+  padding: 8px;
+  border-radius: 8px;
+}
+
+select.Pendiente {
+  background-color: #aeb6bf;
+  color: #044170;
+  font-weight: bold;
+  padding: 8px;
+  border-radius: 8px;
+}
+
+select.Cumplido option,
+select.Pendiente option {
+  background-color: white;
+  color: #333;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.action-buttons button {
   background-color: #044170;
-  color: #fff;
-  padding: 10px 20px;
+  color: white;
   border: none;
-  border-radius: 20px;
+  padding: 8px 14px;
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: background-color 0.3s;
+  font-weight: 500;
+}
+
+.action-buttons button:hover {
+  background-color: #005599;
+}
+
+.btn-edit {
+  background-color: #044170;
+}
+
+.btn-edit:hover {
+  background-color: #005599;
+}
+
+.btn-save {
+  background-color: #2e7d32;
+}
+
+.btn-save:hover {
+  background-color: #388e3c;
+}
+
+.btn-approve {
+  background-color: #2e7d32;
+}
+
+.btn-approve:hover {
+  background-color: #388e3c;
+}
+
+.btn-delete {
+  background-color: #c62828;
+}
+
+.btn-delete:hover {
+  background-color: #d32f2f;
+}
+
+/* Button Styles */
+.btn-upload,
+.btn-add {
+  background-color: #044170;
+  color: white;
+  border: none;
+  padding: 10px 20px;
   font-size: 14px;
   cursor: pointer;
-  display: block;
-  margin: 20px auto 0;
-}
-
-button:hover {
-  background-color: #888;
-}
-
-/* Specific Styles for Validation Button */
-button.validado {
-  background-color: #888;
-  color: #fff;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .cont {
-    flex-direction: column;
-  }
-
-  .section {
-    flex: 1 1 100%;
-  }
-  .section-2 {
-    flex: 1 1 100%;
-  }
-}
-
-.a {
-  background-color: #888;
-  color: #fff;
-  padding: 10px 20px;
-  border: none;
   border-radius: 20px;
-  font-size: 14px;
-  cursor: not-allowed;
-  display: block;
-  margin: 20px auto 0;
+  transition: background-color 0.3s;
 }
 
+.btn-upload:hover,
+.btn-add:hover {
+  background-color: #005599;
+}
+
+.btn-add {
+  margin-left: 10px;
+}
+
+/* Inline add form */
+.add-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.input-add {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  width: 220px;
+}
+
+/* Date Column Styles */
+.record-table td:nth-child(3),
+.record-table td:nth-child(4) {
+  font-size: 12px;
+  color: #666;
+  white-space: nowrap;
+}
+
+.record-table th:nth-child(3),
+.record-table th:nth-child(4) {
+  font-size: 12px;
+}
+
+/* Empty Message */
+.empty-msg {
+  text-align: center;
+  color: #999;
+  font-style: italic;
+  padding: 20px;
+  font-size: 14px;
+}

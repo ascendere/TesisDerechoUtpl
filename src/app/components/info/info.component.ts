@@ -469,16 +469,21 @@ export class InfoComponent implements OnInit {
   async saveManualUser() {
     this.isLoading = true;
     try {
-      // Aplicamos la misma "traducción" a inglés que usas en el Excel
-      const cleanUser = {
+      // 1. Definimos la estructura base común para todos (Estudiantes, Secretarios, etc.)
+      let cleanUser: any = {
         firstName: this.newUser.nombre.trim(),
         lastName: this.newUser.apellido.trim(),
         email: this.newUser.email.trim().toLowerCase(),
         cedula: String(this.newUser.cedula).trim(),
         role: this.selectedRoleForUpload,
-        degree: this.newUser.titulo ? this.newUser.titulo.trim() : null,
-        tempData: {
-          // <--- Agrupa esto igual que en el Excel
+      };
+
+      // 2. Solo si es docente, agregamos los campos académicos específicos
+      if (this.selectedRoleForUpload === 'docente') {
+        cleanUser.degree = this.newUser.titulo
+          ? this.newUser.titulo.trim()
+          : null;
+        cleanUser.tempData = {
           subjectName: this.newUser.asignatura
             ? this.newUser.asignatura.trim()
             : null,
@@ -489,8 +494,15 @@ export class InfoComponent implements OnInit {
             ? this.newUser.modalidad.trim().toLowerCase()
             : 'presencial',
           cycleId: this.activeCycleId,
-        },
-      };
+        };
+      }
+      // 3. Lógica para roles de gestión (Director/Evaluador)
+      if (
+        this.selectedRoleForUpload === 'director' ||
+        this.selectedRoleForUpload === 'evaluador'
+      ) {
+        cleanUser.currentLoad = 0;
+      }
 
       // Validar datos mínimos
       if (!cleanUser.firstName || !cleanUser.email || !cleanUser.cedula) {
@@ -499,10 +511,7 @@ export class InfoComponent implements OnInit {
 
       await this.importService.saveUsersToAuthorized([cleanUser]);
 
-      this.isError = false;
-      this.feedbackMessage = 'Usuario creado y autorizado con éxito.';
-      this.showModal = false; // Cerrar al terminar
-      this.resetManualForm();
+      // ... resto de tu lógica de feedback ...
     } catch (error: any) {
       this.isError = true;
       this.feedbackMessage = error.message;

@@ -9,16 +9,24 @@
 
   <!-- Botón para agregar nueva evidencia -->
   <div class="botones-flujo">
-    <button *ngIf="usuarioLoggeado?.role === 'director' || usuarioLoggeado?.role === 'estudiante'"
-      (click)="openReunionDialog()">Reunión +</button>
+    <button
+      *ngIf="
+        usuarioLoggeado?.role === 'director' ||
+        usuarioLoggeado?.role === 'estudiante'
+      "
+      (click)="openReunionDialog()"
+    >
+      Reunión +
+    </button>
 
-    <button (click)="openAddDialog()">Agregar +</button>
+    <button (click)="openAddDialog()">Agregar Evidencias +</button>
 
     <!-- Botón para visualizar rúbrica cuando el porcentaje del director sea 100 -->
     <div *ngIf="ultimoPorcentajeDirector === 100" class="rubrica-container">
-      <button [routerLink]="['/rubrica']" [queryParams]="{ tesisId: tesisId }">Visualizar Rúbrica</button>
+      <button [routerLink]="['/rubrica']" [queryParams]="{ tesisId: tesisId }">
+        Visualizar Rúbrica
+      </button>
     </div>
-
   </div>
 
   <div class="progress-container">
@@ -37,7 +45,6 @@
     <p>{{ ultimoPorcentajeDirector }}%</p>
   </div>
 
-
   <!-- Tabla para mostrar las evidencias -->
   <h3 class="titulo-tabla">Evidencias</h3>
   <table>
@@ -45,10 +52,10 @@
       <tr>
         <th>Periodo</th>
         <th>Bimestre</th>
+        <th>Tipo de Evidencia</th>
+        <th>Subcategoría</th>
         <th>Fecha de Registro</th>
-        <th>Descripción</th>
         <th>Evidencia</th>
-        <th>Comentario</th>
         <th>Usuario</th>
       </tr>
     </thead>
@@ -56,10 +63,12 @@
       <tr *ngFor="let evidencia of evidencias">
         <td>{{ evidencia.periodo }}</td>
         <td>{{ evidencia.bimestre }}</td>
+        <td>{{ evidencia.tipoEvidencia }}</td>
+        <td>{{ evidencia.subcategoria }}</td>
         <td>{{ evidencia.fechaRegistro | date }}</td>
-        <td>{{ evidencia.descripcion }}</td>
-        <td><a [href]="evidencia.evidenciaUrl" target="_blank">Ver archivo</a></td>
-        <td>{{ evidencia.comentario }}</td>
+        <td>
+          <a [href]="evidencia.evidenciaUrl" target="_blank">Ver archivo</a>
+        </td>
         <td>{{ evidencia.usuarioNombre }} {{ evidencia.usuarioApellido }}</td>
       </tr>
     </tbody>
@@ -68,76 +77,102 @@
   <!-- Modal para agregar una nueva evidencia -->
   <div *ngIf="mostrarDialogoAgregar" class="modal">
     <div class="modal-content">
-      <div class="centro">
+      <div class="modal-header">
         <h2>Agregar nueva evidencia</h2>
-
-        <div class="author-info">
-          <label><b>Autor: </b></label>
-          <span> {{ usuarioLoggeado?.firstName }} {{ usuarioLoggeado?.lastName }}</span>
-        </div>
-
-        <div class="periodo-info">
-          <label><b>Periodo: </b></label>
-          <span> Oct/2024 - Feb/2025</span>
-        </div>
+        <button
+          type="button"
+          class="btn-download-matriz-header"
+          (click)="descargarMatrizCategorias()"
+        >
+          ⬇ Tipos de Evidencia
+        </button>
       </div>
 
+      <!-- encabezado: autor y periodo ocultos para mantener diseño limpio -->
 
       <form (ngSubmit)="submit()">
-
-
-        <div class="sup">
-          <div class="form-group">
-            <label>Fecha de registro</label>
-            <input type="date" [(ngModel)]="form.fechaRegistro" name="fechaRegistro" required readonly>
-          </div>
-
-          <div class="form-group">
-            <label>Descripción</label>
-            <input type="text" [(ngModel)]="form.descripcion" name="descripcion" required>
-          </div>
-
-          <div class="form-group">
-            <label>Comentario</label>
-            <input type="text" [(ngModel)]="form.comentario" name="comentario">
-          </div>
-        </div>
-
-
-
-        <div class="inf">
-          <div class="form-group">
-            <label>Selecciona bimestre</label>
-            <select [(ngModel)]="form.bimestre" name="bimestre" required>
-              <option value="" disabled>Selecciona una opción</option>
-              <option value="primero">Primero</option>
-              <option value="segundo">Segundo</option>
-            </select>
-          </div>
-
-
-          <div class="file-upload">
+        <div class="form-grid">
+          <div class="form-column">
             <div class="form-group">
-              <label>Carga aquí tu archivo <span class="required">*</span></label>
-              <input type="file" id="fileUpload" (change)="onFileSelected($event)" required>
+              <label>Selecciona bimestre</label>
+              <select [(ngModel)]="form.bimestre" name="bimestre" required>
+                <option value="" disabled>Selecciona una opción</option>
+                <option value="primero">Primero</option>
+                <option value="segundo">Segundo</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Subcategoría</label>
+              <input
+                type="text"
+                [(ngModel)]="form.subcategoria"
+                name="subcategoria"
+                placeholder="Ej: Portada..."
+                required
+              />
+            </div>
+          </div>
+
+          <div class="form-column">
+            <div class="form-group">
+              <label>Selecciona tipo de evidencia</label>
+              <select
+                [(ngModel)]="form.tipoEvidencia"
+                name="tipoEvidencia"
+                required
+              >
+                <option value="" disabled>Selecciona una opción</option>
+                <option *ngFor="let tipo of tiposEvidencia" [value]="tipo">
+                  {{ tipo }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label
+                >Carga aquí tu archivo <span class="required">*</span></label
+              >
+              <input
+                type="file"
+                id="fileUpload"
+                (change)="onFileSelected($event)"
+                required
+              />
               <label for="fileUpload" class="custom-file-upload">
                 <img src="assets/img/upload-icon.svg" alt="Upload Icon" />
-                {{documento ? 'Archivo cargado' : 'Adjunta tu documento aquí'}}
+                {{ documento ? "Archivo cargado" : "Adjunta tu documento" }}
               </label>
             </div>
           </div>
-          <div class="form-group">
-            <label>Porcentaje de Avance:</label>
-            <input type="number" [(ngModel)]="form.porcentaje" name="porcentaje"
-              [min]="!(usuarioLoggeado) || usuarioLoggeado.role === 'estudiante' ? (ultimoPorcentajeEstudiante + 1) : (ultimoPorcentajeDirector + 1)"
-              max="100" step="1">
+
+          <div class="form-column">
+            <div class="form-group">
+              <label>Porcentaje de Avance:</label>
+              <input
+                type="number"
+                [(ngModel)]="form.porcentaje"
+                name="porcentaje"
+                class="porcentaje-input"
+                [min]="
+                  !usuarioLoggeado || usuarioLoggeado.role === 'estudiante'
+                    ? ultimoPorcentajeEstudiante + 1
+                    : ultimoPorcentajeDirector + 1
+                "
+                max="100"
+                step="1"
+              />
+            </div>
           </div>
         </div>
 
         <div class="modal-buttons">
-          <button type="button" class="cancel-btn" (click)="cerrarDialogo()">Cancelar</button>
-          <button [disabled]="isUploading" type="submit" class="submit-btn">{{isUploading ? 'Guardando...' :
-            'Crear'}}</button>
+          <button type="button" class="cancel-btn" (click)="cerrarDialogo()">
+            Cancelar
+          </button>
+          <button [disabled]="isUploading" type="submit" class="submit-btn">
+            {{ isUploading ? "Guardando..." : "Crear" }}
+          </button>
         </div>
       </form>
     </div>
@@ -151,7 +186,10 @@
       <div class="datos">
         <div>
           <label><b>Autor:</b></label>
-          <span>{{ usuarioLoggeado?.firstName }} {{ usuarioLoggeado?.lastName }}</span>
+          <span
+            >{{ usuarioLoggeado?.firstName }}
+            {{ usuarioLoggeado?.lastName }}</span
+          >
         </div>
         <div>
           <label><b>Periodo:</b></label>
@@ -166,40 +204,63 @@
       <!-- Mostrar fecha de registro (actual del sistema) -->
 
       <form (ngSubmit)="submitReunion()">
-
         <div class="modal-input">
           <div class="form-group">
             <label>Fecha de reunión (programada)</label>
-            <input type="date" [(ngModel)]="reunionForm.fechaReunion" name="fechaReunion" required>
+            <input
+              type="date"
+              [(ngModel)]="reunionForm.fechaReunion"
+              name="fechaReunion"
+              required
+            />
           </div>
 
           <div class="form-group">
             <label>Descripción</label>
-            <input type="text" [(ngModel)]="reunionForm.descripcion" name="descripcion" placeholder="Escribe aquí..."
-              required>
+            <input
+              type="text"
+              [(ngModel)]="reunionForm.descripcion"
+              name="descripcion"
+              placeholder="Escribe aquí..."
+              required
+            />
           </div>
         </div>
 
         <div class="form-group">
-          <label>Adjunta evidencia (imagen o PDF) <span class="required">*</span></label>
-          <input type="file" id="fileUploadReunion" (change)="onFileSelectedReunion($event)"
-            accept="image/*,application/pdf">
+          <label
+            >Adjunta evidencia (imagen o PDF)
+            <span class="required">*</span></label
+          >
+          <input
+            type="file"
+            id="fileUploadReunion"
+            (change)="onFileSelectedReunion($event)"
+            accept="image/*,application/pdf"
+          />
           <label for="fileUploadReunion" class="custom-file-upload">
             <img src="assets/img/upload-icon.svg" alt="Upload Icon" />
-            {{documentoReunion ? 'Archivo cargado' : 'Adjunta tu documento aquí'}}
+            {{
+              documentoReunion ? "Archivo cargado" : "Adjunta tu documento aquí"
+            }}
           </label>
         </div>
 
-
         <div class="modal-buttons">
-          <button type="button" class="cancel-btn" (click)="cerrarReunionDialog()">Cancelar</button>
-          <button [disabled]="isUploading" type="submit" class="submit-btn">{{isUploading ? 'Guardando...' :
-            'Crear'}}</button>
+          <button
+            type="button"
+            class="cancel-btn"
+            (click)="cerrarReunionDialog()"
+          >
+            Cancelar
+          </button>
+          <button [disabled]="isUploading" type="submit" class="submit-btn">
+            {{ isUploading ? "Guardando..." : "Crear" }}
+          </button>
         </div>
       </form>
     </div>
   </div>
-
 
   <!-- Tabla de reuniones -->
   <h3 class="titulo-tabla">Reuniones</h3>
@@ -209,7 +270,6 @@
         <th>Periodo</th>
         <th>Fecha de registro</th>
         <th>Fecha de reunión</th>
-        <th>Descripción</th>
         <th>Evidencia</th>
         <th>Asistencia</th>
         <th>Usuario</th>
@@ -228,8 +288,14 @@
           <ng-template #sinEvidencia>Sin evidencia</ng-template>
         </td>
         <td>
-          <select [(ngModel)]="reunion.asistencia" (change)="actualizarAsistencia(reunion)"
-            [disabled]="usuarioLoggeado?.firstName + ' ' + usuarioLoggeado?.lastName !== reunion.autor">
+          <select
+            [(ngModel)]="reunion.asistencia"
+            (change)="actualizarAsistencia(reunion)"
+            [disabled]="
+              usuarioLoggeado?.firstName + ' ' + usuarioLoggeado?.lastName !==
+              reunion.autor
+            "
+          >
             <option value="Pendiente">Pendiente</option>
             <option value="Asistió">Asistió</option>
             <option value="No asistió">No asistió</option>
@@ -239,7 +305,5 @@
       </tr>
     </tbody>
   </table>
-
-
 </div>
 <app-footer2></app-footer2>

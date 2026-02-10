@@ -124,11 +124,13 @@ export class AdminDataComponent implements OnInit {
       .valueChanges()
       .subscribe((data: any) => {
         if (data) {
+          console.log('Datos de tesis obtenidos:', data);
           this.recuadros.director.correo = data.directorEmail || '';
           this.directorName = data.directorName || 'Nombre no disponible';
           this.recuadros.docente.correo = data.professorEmail || '';
           this.recuadros.equipoEvaluador.correo = data.evaluatorEmail || '';
-
+          this.recuadros.aprobacionDirector.fechaEnvio =
+            data.rubrica.fechaActualizacion;
           if (data.directorId && this.directorsList.length > 0) {
             this.selectedDirector = this.directorsList.find(
               (prof) => prof.id === data.directorId,

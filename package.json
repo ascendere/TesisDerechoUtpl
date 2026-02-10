@@ -25,6 +25,7 @@
     "jspdf": "^2.5.2",
     "jspdf-autotable": "^3.8.3",
     "nodemailer": "^6.9.15",
+    "puppeteer": "^24.37.2",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "xlsx": "^0.18.5",

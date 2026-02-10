@@ -60,7 +60,7 @@ export class PersonalDataComponent implements OnInit {
     private consultasService: ConsultasService,
     private route: ActivatedRoute,
     private alertaService: AlertaService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit() {
@@ -112,7 +112,7 @@ export class PersonalDataComponent implements OnInit {
         this.alertaService.mostrarAlerta(
           'error',
           'Error de autenticación',
-          'No se encontró el usuario autenticado.'
+          'No se encontró el usuario autenticado.',
         );
       }
     });
@@ -203,7 +203,7 @@ export class PersonalDataComponent implements OnInit {
         this.alertaService.mostrarAlerta(
           'error',
           'Error de registro',
-          'No se pudo identificar la tesis. Intenta volver a ingresar al formulario.'
+          'No se pudo identificar la tesis. Intenta volver a ingresar al formulario.',
         );
         return; // Evita la ejecución si tesisId es null
       }
@@ -222,7 +222,7 @@ export class PersonalDataComponent implements OnInit {
               this.consultasService
                 .uploadImage(userId, this.idPhoto, 'idPhotos')
                 .toPromise()
-                .then((url) => url ?? null)
+                .then((url) => url ?? null),
             );
           } else {
             uploadTasks.push(Promise.resolve(this.idPhotoURL || null)); // Mantiene la URL existente si no hay archivo nuevo
@@ -234,7 +234,7 @@ export class PersonalDataComponent implements OnInit {
               this.consultasService
                 .uploadImage(userId, this.idDocPhoto, 'idDocs')
                 .toPromise()
-                .then((url) => url ?? null)
+                .then((url) => url ?? null),
             );
           } else {
             uploadTasks.push(Promise.resolve(this.idDocPhotoURL || null));
@@ -246,7 +246,7 @@ export class PersonalDataComponent implements OnInit {
               this.consultasService
                 .uploadImage(userId, this.idDiscPhoto, 'disabilities')
                 .toPromise()
-                .then((url) => url ?? null)
+                .then((url) => url ?? null),
             );
           } else {
             uploadTasks.push(Promise.resolve(this.idDiscPhotoURL || null)); // Mantiene la URL existente
@@ -286,7 +286,9 @@ export class PersonalDataComponent implements OnInit {
 
               // Filtrar propiedades undefined
               personalData = Object.fromEntries(
-                Object.entries(personalData).filter(([_, v]) => v !== undefined)
+                Object.entries(personalData).filter(
+                  ([_, v]) => v !== undefined,
+                ),
               );
               //Convertir todos los string a MAYÚSCULAS antes de guardar
               Object.keys(personalData).forEach((key) => {
@@ -314,7 +316,7 @@ export class PersonalDataComponent implements OnInit {
                   this.alertaService.mostrarAlerta(
                     'exito',
                     'Datos guardados',
-                    'Los datos personales se han guardado correctamente.'
+                    'Los datos personales se han guardado correctamente.',
                   );
                   setTimeout(() => {
                     this.router.navigate(['/docs'], {
@@ -325,12 +327,12 @@ export class PersonalDataComponent implements OnInit {
                 .catch((error) => {
                   console.error(
                     'Error al guardar los datos personales en la tesis: ',
-                    error
+                    error,
                   );
                   this.alertaService.mostrarAlerta(
                     'error',
                     'Error al guardar',
-                    'Ocurrió un error al guardar los datos personales. Intenta nuevamente.'
+                    'Ocurrió un error al guardar los datos personales. Intenta nuevamente.',
                   );
                 });
             })
@@ -339,7 +341,7 @@ export class PersonalDataComponent implements OnInit {
               this.alertaService.mostrarAlerta(
                 'error',
                 'Error al subir archivos',
-                'No se pudieron subir los documentos. Verifica tu conexión o intenta con archivos válidos.'
+                'No se pudieron subir los documentos. Verifica tu conexión o intenta con archivos válidos.',
               );
             });
         }

@@ -233,7 +233,6 @@
             <th>Nombre de docentes</th>
             <th>Facultad</th>
             <th>Carrera</th>
-            <th>Identificación</th>
             <th>Asignatura</th>
             <th>Estado</th>
             <th>Avance</th>
@@ -246,7 +245,6 @@
             <td>{{ tesis.professorName }}</td>
             <td>Facultad de Ciencias Jurídicas y Políticas</td>
             <td>Derecho</td>
-            <td>{{ tesis.userId }}</td>
             <td>{{ tesis.className }}</td>
             <td
               [ngClass]="{
@@ -467,7 +465,7 @@
             <select [(ngModel)]="selectedRoleForUpload">
               <option [ngValue]="null" disabled>-- Selecciona un rol --</option>
               <option value="director">Director</option>
-              <option value="equipo evaluador">Equipo Evaluador</option>
+              <option value="evaluador">Equipo Evaluador</option>
               <option value="estudiante">Estudiante</option>
               <option value="docente">Docente</option>
             </select>
