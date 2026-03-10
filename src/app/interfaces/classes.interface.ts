@@ -5,5 +5,6 @@ export default interface Class {
   cicleId: String;
   type: string;
   professorId: string;
+  directorName?: string;
   description?: string;
 }

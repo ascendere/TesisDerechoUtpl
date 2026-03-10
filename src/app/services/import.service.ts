@@ -26,8 +26,13 @@ export class ImportService {
       // Usamos el email como ID del documento para evitar duplicados
       const docRef = this.afs.collection('authorized').doc(user.email).ref;
 
+      const userPayload = {
+        ...user,
+        status: 'no registered',
+      };
+
       // Al usar set(), si el correo ya existe, se sobrescribe con la nueva info
-      batch.set(docRef, user);
+      batch.set(docRef, userPayload);
     });
 
     return await batch.commit();
@@ -47,6 +52,7 @@ export class ImportService {
         {
           email: u.email,
           role: u.role,
+          status: 'no registered',
           used: false,
           createdAt: new Date(),
         },
@@ -76,7 +82,7 @@ export class ImportService {
         role: row.role,
         cedula: row.cedula,
         degree: row.titulo,
-        status: 'pending', // Indica que no ha completado su registro inicial
+        status: 'no registered',
       };
 
       if (row.role === 'docente') {

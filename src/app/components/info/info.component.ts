@@ -7,10 +7,8 @@ import { switchMap, map, first } from 'rxjs/operators';
 import Class from '../../interfaces/classes.interface';
 import autoTable from 'jspdf-autotable';
 import { jsPDF } from 'jspdf';
-import * as XLSX from 'xlsx'; // Importar la librería xlsx
 import { AlertaService } from '../../services/alert.service';
 import { from } from 'rxjs';
-import { ImportService } from 'src/app/services/import.service';
 @Component({
   selector: 'app-info',
   templateUrl: './info.component.html',
@@ -26,32 +24,21 @@ export class InfoComponent implements OnInit {
   filteredClasses$: Observable<(Class & { professorName: string })[]> | null =
     null;
   isCreatingTesis = false;
+  approvalClasses: (Class & {
+    professorName: string;
+    professorEmail: string;
+    professorId: string;
+  })[] = [];
 
   tesisList: any[] = []; // Lista completa de tesis
   filteredTesis: any[] = []; // Lista filtrada según el buscador
   searchTerm: string = '';
-
-  selectedFile: File | null = null;
-  isLoading = false;
-  feedbackMessage = '';
-  isError = false;
   classMap: Map<string, any> = new Map(); // Mapa para asignaturas y paralelos
-  activeCycleId: string = 'VigK04NJGN5Z60HIgK62'; // Ejemplo de ciclo activo
-  // Nueva propiedad para el rol seleccionado en el <select>
-  selectedRoleForUpload:
-    | 'director'
-    | 'evaluador'
-    | 'estudiante'
-    | 'docente'
-    | null = null;
 
   cycles: any[] = [];
   selectedCycleId: string = '';
+  activeCycleName: string = '';
   filteredClasses: (Class & { professorName: string })[] = [];
-
-  archivoSeleccionado: File | null = null;
-  rolACargar: string = 'estudiante'; // Por defecto
-  mensaje: string = '';
 
   isModalVisible: boolean = false;
   selectedThesis: any = null;
@@ -60,26 +47,14 @@ export class InfoComponent implements OnInit {
 
   // Form data for the modal
   assignmentForm = {
+    classId: '',
     directorId: '',
     evaluatorId: '',
     rejectionReason: '',
   };
-  // Variables para el control del Modal y formulario manual
-  showModal: boolean = false;
   showTesisModal = false;
   selectedRejectionReason: string = '';
   isRejectionModalVisible: boolean = false;
-
-  newUser: any = {
-    nombre: '',
-    apellido: '',
-    email: '',
-    cedula: '',
-    asignatura: '',
-    paralelo: '',
-    titulo: '',
-    modalidad: '',
-  };
 
   tipoTesis: 'pregrado' | 'posgrado' | null = null;
   datosTesis = {
@@ -88,18 +63,11 @@ export class InfoComponent implements OnInit {
     tituloPosgrado: '',
   };
 
-  // Abrir modal
-  openCreateModal() {
-    this.showModal = true;
-    this.feedbackMessage = '';
-  }
-
   constructor(
     private loginService: LoginService,
     private consultasService: ConsultasService,
     private router: Router,
     private alertaService: AlertaService,
-    private importService: ImportService,
   ) {}
 
   ngOnInit(): void {
@@ -112,9 +80,38 @@ export class InfoComponent implements OnInit {
         console.error('No se encontró el usuario autenticado.');
       }
     });
-    this.consultasService.getCycles().subscribe((cycles) => {
-      this.cycles = cycles;
-    });
+    this.consultasService
+      .getActiveCycle()
+      .pipe(take(1))
+      .subscribe({
+        next: (cycle) => {
+          if (!cycle) {
+            this.cycles = [];
+            this.selectedCycleId = '';
+            this.activeCycleName = '';
+            this.alertaService.mostrarAlerta(
+              'info',
+              'Ciclo no definido',
+              'No existe un ciclo académico activo (estatus=true).',
+            );
+            return;
+          }
+
+          this.cycles = [cycle];
+          this.selectedCycleId = cycle.id;
+          this.activeCycleName = cycle.name || '';
+        },
+        error: () => {
+          this.cycles = [];
+          this.selectedCycleId = '';
+          this.activeCycleName = '';
+          this.alertaService.mostrarAlerta(
+            'error',
+            'Error',
+            'No se pudo obtener el ciclo académico activo.',
+          );
+        },
+      });
   }
 
   loadStudentTesis(userId: string): void {
@@ -143,24 +140,140 @@ export class InfoComponent implements OnInit {
       .getClassesByModality(modality)
       .pipe(take(1))
       .subscribe((classes) => {
-        this.filteredClasses = classes;
+        const activeCycleId = `${this.selectedCycleId || ''}`.trim();
+
+        this.filteredClasses = (classes || []).filter((item: any) => {
+          if (!activeCycleId) {
+            return false;
+          }
+
+          const classCycleId = `${item?.cycleId || item?.cicleId || ''}`.trim();
+          return classCycleId === activeCycleId;
+        });
       });
   }
 
   isButtonEnabled(): boolean {
-    return (
-      this.selectedCycleId !== null &&
-      this.selectedClass !== null &&
-      !this.isCreatingTesis
-    );
+    return this.isTesisFormComplete() && !this.isCreatingTesis;
+  }
+
+  private isTesisFormComplete(): boolean {
+    if (!this.selectedCycleId || !this.selectedModality || !this.selectedClass) {
+      return false;
+    }
+
+    if (this.tipoTesis === 'pregrado') {
+      const numeroSentencia = this.sanitizeNumeroSentencia(
+        this.datosTesis.numeroSentencia,
+      ).trim();
+      const asunto = `${this.datosTesis.asunto || ''}`.trim();
+      return !!numeroSentencia && !!asunto;
+    }
+
+    if (this.tipoTesis === 'posgrado') {
+      const titulo = `${this.datosTesis.tituloPosgrado || ''}`.trim();
+      return !!titulo;
+    }
+
+    return false;
+  }
+
+  private getMissingFieldsMessage(): string {
+    const missingFields: string[] = [];
+
+    if (!this.tipoTesis) {
+      missingFields.push('tipo de tesis');
+    }
+
+    if (!this.selectedCycleId) {
+      missingFields.push('ciclo académico activo');
+    }
+
+    if (!this.selectedModality) {
+      missingFields.push('modalidad');
+    }
+
+    if (!this.selectedClass) {
+      missingFields.push('clase');
+    }
+
+    if (this.tipoTesis === 'pregrado') {
+      const numeroSentencia = this.sanitizeNumeroSentencia(
+        this.datosTesis.numeroSentencia,
+      ).trim();
+      const asunto = `${this.datosTesis.asunto || ''}`.trim();
+
+      if (!numeroSentencia) {
+        missingFields.push('número de sentencia');
+      }
+
+      if (!asunto) {
+        missingFields.push('asunto');
+      }
+    }
+
+    if (this.tipoTesis === 'posgrado') {
+      const titulo = `${this.datosTesis.tituloPosgrado || ''}`.trim();
+      if (!titulo) {
+        missingFields.push('título de tesis');
+      }
+    }
+
+    if (missingFields.length === 0) {
+      return 'Completa todos los campos obligatorios.';
+    }
+
+    return `Completa los siguientes campos: ${missingFields.join(', ')}.`;
+  }
+
+  onNumeroSentenciaInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const sanitizedValue = this.sanitizeNumeroSentencia(input?.value || '');
+
+    this.datosTesis.numeroSentencia = sanitizedValue;
+
+    if (input) {
+      input.value = sanitizedValue;
+    }
+  }
+
+  onNumeroSentenciaKeydown(event: KeyboardEvent): void {
+    const allowedKeys = [
+      'Backspace',
+      'Delete',
+      'ArrowLeft',
+      'ArrowRight',
+      'Tab',
+      'Home',
+      'End',
+    ];
+
+    if (allowedKeys.includes(event.key)) {
+      return;
+    }
+
+    if (/^[0-9-]$/.test(event.key)) {
+      return;
+    }
+
+    event.preventDefault();
   }
 
   goToProfile(): void {
-    if (!this.isButtonEnabled() || !this.tipoTesis) {
+    if (!this.selectedCycleId) {
+      this.alertaService.mostrarAlerta(
+        'error',
+        'Sin ciclo activo',
+        'No existe un ciclo académico activo para registrar la tesis.',
+      );
+      return;
+    }
+
+    if (!this.isTesisFormComplete()) {
       this.alertaService.mostrarAlerta(
         'error',
         'Incompleto',
-        'Selecciona el tipo de tesis y completa los campos.',
+        this.getMissingFieldsMessage(),
       );
       return;
     }
@@ -188,6 +301,11 @@ export class InfoComponent implements OnInit {
           const cicloSeleccionado = this.cycles.find(
             (c) => c.id === this.selectedCycleId,
           );
+          const numeroSentencia = this.sanitizeNumeroSentencia(
+            this.datosTesis.numeroSentencia,
+          ).trim();
+          const asunto = `${this.datosTesis.asunto || ''}`.trim();
+          const tituloPosgrado = `${this.datosTesis.tituloPosgrado || ''}`.trim();
 
           // OBJETO BASE
           let tesisData: any = {
@@ -196,6 +314,7 @@ export class InfoComponent implements OnInit {
             className: classData.subjectName,
             classParallel: classData.parallel,
             classId: classData.id,
+            directorName: classData.directorName || 'Sin Director Asignado',
             professorId: classData.professorId,
             professorName: classData.professorName,
             professorEmail: classData.professorEmail,
@@ -208,10 +327,10 @@ export class InfoComponent implements OnInit {
 
           // CAMPOS ESPECÍFICOS DEL DIAGRAMA
           if (this.tipoTesis === 'pregrado') {
-            tesisData.numeroSentencia = this.datosTesis.numeroSentencia;
-            tesisData.asunto = this.datosTesis.asunto;
+            tesisData.numeroSentencia = numeroSentencia;
+            tesisData.asunto = asunto;
           } else {
-            tesisData.tituloTesis = this.datosTesis.tituloPosgrado;
+            tesisData.tituloTesis = tituloPosgrado;
           }
 
           if (isFirst) {
@@ -299,23 +418,6 @@ export class InfoComponent implements OnInit {
     doc.save('seguimiento_tesis.pdf');
   }
 
-  onFileSelected(event: any): void {
-    const file = event.target.files[0];
-    if (file) {
-      // Validar tipo de archivo si es necesario
-      if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
-        this.archivoSeleccionado = event.target.files[0];
-        this.selectedFile = file;
-        this.feedbackMessage = ''; // Limpiar mensaje anterior
-        this.isError = false;
-      } else {
-        this.selectedFile = null;
-        this.feedbackMessage =
-          'Error: Por favor, selecciona un archivo Excel (.xlsx o .xls).';
-        this.isError = true;
-      }
-    }
-  }
   get tesisActivas() {
     return this.filteredTesis.filter(
       (t) => t.status !== 'Pendiente de Aprobar' && t.status !== 'Rechazado',
@@ -365,177 +467,16 @@ export class InfoComponent implements OnInit {
       });
     }
   }
-  async processFile() {
-    if (!this.selectedFile || !this.selectedRoleForUpload) {
-      this.feedbackMessage = 'Selecciona un archivo y un rol.';
-      return;
-    }
-
-    // Los docentes SIEMPRE necesitan un ciclo activo para sus materias
-    if (this.selectedRoleForUpload === 'docente' && !this.activeCycleId) {
-      this.feedbackMessage =
-        'No existe un ciclo académico activo para importar docentes.';
-      return;
-    }
-
-    this.isLoading = true;
-    const reader = new FileReader();
-
-    reader.onload = async (e: any) => {
-      try {
-        const workbook = XLSX.read(e.target.result, { type: 'binary' });
-        const rows: any[] = XLSX.utils.sheet_to_json(
-          workbook.Sheets[workbook.SheetNames[0]],
-        );
-
-        if (rows.length === 0) throw new Error('El archivo está vacío.');
-
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        const seenEmails = new Set<string>();
-        const payload: any[] = [];
-
-        for (const [index, row] of rows.entries()) {
-          const fila = index + 2;
-
-          // Validaciones comunes (Nombre, Apellido, Email)
-          if (!row.email || !row.nombre || !row.apellido) {
-            throw new Error(
-              `Fila ${fila}: email, nombre y apellido son obligatorios`,
-            );
-          }
-
-          const email = String(row.email).trim().toLowerCase();
-          if (!emailRegex.test(email))
-            throw new Error(`Fila ${fila}: email inválido`);
-
-          // OBJETO BASE (Común para todos)
-          let userEntry: any = {
-            email,
-            firstName: String(row.nombre).trim(),
-            lastName: String(row.apellido).trim(),
-            cedula: row.cedula ? String(row.cedula).trim() : null,
-            role: this.selectedRoleForUpload,
-          };
-
-          // LÓGICA ESPECÍFICA POR ROL
-          if (this.selectedRoleForUpload === 'docente') {
-            if (!row.asignatura || !row.paralelo) {
-              throw new Error(
-                `Fila ${fila}: Los docentes requieren Asignatura y Paralelo.`,
-              );
-            }
-
-            if (seenEmails.has(email)) continue;
-            seenEmails.add(email);
-
-            // Campos exclusivos de docente
-            userEntry.degree = row.titulo ? String(row.titulo).trim() : 'Abg.';
-            userEntry.tempData = {
-              subjectName: String(row.asignatura).trim(),
-              parallel: String(row.paralelo).trim().toUpperCase(),
-              modality: row.modalidad
-                ? String(row.modalidad).trim().toLowerCase()
-                : 'presencial',
-              cycleId: this.activeCycleId,
-            };
-          } else if (this.selectedRoleForUpload === 'estudiante') {
-            // Si es necesario proximamente
-          }
-
-          payload.push(userEntry);
-        }
-
-        // ENVÍO AL SERVICIO CORRESPONDIENTE
-        if (this.selectedRoleForUpload === 'docente') {
-          await this.importService.saveUsersToAuthorized(payload);
-        } else {
-          await this.importService.saveUsersToAuthorized(payload);
-        }
-
-        this.isError = false;
-        this.feedbackMessage = `Éxito: ${payload.length} registros de ${this.selectedRoleForUpload} procesados.`;
-      } catch (error: any) {
-        this.isError = true;
-        this.feedbackMessage = error.message || 'Error al importar.';
-      } finally {
-        this.isLoading = false;
-      }
-    };
-
-    reader.readAsBinaryString(this.selectedFile);
-  }
-
-  // Guardar un solo usuario manualmente
-  async saveManualUser() {
-    this.isLoading = true;
-    try {
-      // 1. Definimos la estructura base común para todos (Estudiantes, Secretarios, etc.)
-      let cleanUser: any = {
-        firstName: this.newUser.nombre.trim(),
-        lastName: this.newUser.apellido.trim(),
-        email: this.newUser.email.trim().toLowerCase(),
-        cedula: String(this.newUser.cedula).trim(),
-        role: this.selectedRoleForUpload,
-      };
-
-      // 2. Solo si es docente, agregamos los campos académicos específicos
-      if (this.selectedRoleForUpload === 'docente') {
-        cleanUser.degree = this.newUser.titulo
-          ? this.newUser.titulo.trim()
-          : null;
-        cleanUser.tempData = {
-          subjectName: this.newUser.asignatura
-            ? this.newUser.asignatura.trim()
-            : null,
-          parallel: this.newUser.paralelo
-            ? this.newUser.paralelo.trim().toUpperCase()
-            : null,
-          modality: this.newUser.modalidad
-            ? this.newUser.modalidad.trim().toLowerCase()
-            : 'presencial',
-          cycleId: this.activeCycleId,
-        };
-      }
-      // 3. Lógica para roles de gestión (Director/Evaluador)
-      if (
-        this.selectedRoleForUpload === 'director' ||
-        this.selectedRoleForUpload === 'evaluador'
-      ) {
-        cleanUser.currentLoad = 0;
-      }
-
-      // Validar datos mínimos
-      if (!cleanUser.firstName || !cleanUser.email || !cleanUser.cedula) {
-        throw new Error('Por favor completa los campos obligatorios.');
-      }
-
-      await this.importService.saveUsersToAuthorized([cleanUser]);
-
-      // ... resto de tu lógica de feedback ...
-    } catch (error: any) {
-      this.isError = true;
-      this.feedbackMessage = error.message;
-    } finally {
-      this.isLoading = false;
-    }
-  }
-
-  resetManualForm() {
-    this.newUser = {
-      nombre: '',
-      apellido: '',
-      email: '',
-      cedula: '',
-      asignatura: '',
-      paralelo: '',
-      titulo: '',
-    };
-  }
-
   openModal(thesis: any, action: 'approve' | 'reject'): void {
     this.selectedThesis = thesis;
     this.modalAction = action;
     this.isModalVisible = true;
+    this.assignmentForm = {
+      classId: thesis?.classId || '',
+      directorId: thesis?.directorId || '',
+      evaluatorId: thesis?.evaluatorId || '',
+      rejectionReason: '',
+    };
     if (thesis.userId) {
       this.consultasService
         .getUserById(thesis.userId)
@@ -552,8 +493,35 @@ export class InfoComponent implements OnInit {
     }
 
     if (action === 'approve') {
-      this.consultasService.getStaffWithWorkload().subscribe((data) => {
-        this.availableStaff = data;
+      forkJoin({
+        staff: this.consultasService
+          .getStaffWithWorkload(this.activeCycleName, this.selectedCycleId)
+          .pipe(take(1)),
+        classes: this.consultasService
+          .getClassesForSecretaryAssignment(this.selectedCycleId)
+          .pipe(take(1)),
+      }).subscribe({
+        next: ({ staff, classes }) => {
+          this.availableStaff = staff || [];
+          this.approvalClasses = classes || [];
+
+          const classExists = this.approvalClasses.some(
+            (classItem) => classItem.id === this.assignmentForm.classId,
+          );
+
+          if (!classExists && this.approvalClasses.length > 0) {
+            this.assignmentForm.classId = this.approvalClasses[0].id;
+          }
+        },
+        error: () => {
+          this.availableStaff = [];
+          this.approvalClasses = [];
+          this.alertaService.mostrarAlerta(
+            'error',
+            'Error',
+            'No se pudieron cargar clases o personal para la aprobación.',
+          );
+        },
       });
     }
   }
@@ -566,6 +534,14 @@ export class InfoComponent implements OnInit {
     return this.availableStaff.filter((member) => member.role === 'evaluador');
   }
 
+  get selectedApprovalClass() {
+    return (
+      this.approvalClasses.find(
+        (classItem) => classItem.id === this.assignmentForm.classId,
+      ) || null
+    );
+  }
+
   confirmProcess(): void {
     if (this.modalAction === 'approve') {
       const director = this.availableStaff.find(
@@ -574,10 +550,29 @@ export class InfoComponent implements OnInit {
       const evaluator = this.availableStaff.find(
         (e) => e.id === this.assignmentForm.evaluatorId,
       );
+      const selectedClass = this.approvalClasses.find(
+        (classItem) => classItem.id === this.assignmentForm.classId,
+      );
+
+      if (!director || !evaluator || !selectedClass) {
+        this.alertaService.mostrarAlerta(
+          'error',
+          'Datos incompletos',
+          'Seleccione clase, director y evaluador para aprobar.',
+        );
+        return;
+      }
 
       const updateData = {
         status: 'Faltante',
         isApproved: true,
+        classId: selectedClass.id,
+        className: selectedClass.subjectName || 'Sin asignatura',
+        classParallel: selectedClass.parallel || '',
+        professorId: selectedClass.professorId || '',
+        professorName: selectedClass.professorName || 'Sin docente',
+        professorEmail: selectedClass.professorEmail || '',
+        ciclo: this.activeCycleName || this.selectedThesis?.ciclo || '',
         directorId: director.id,
         directorName: `${director.firstName} ${director.lastName}`,
         directorEmail: director.email,
@@ -621,7 +616,9 @@ export class InfoComponent implements OnInit {
   closeModal(): void {
     this.isModalVisible = false;
     this.selectedThesis = null;
+    this.approvalClasses = [];
     this.assignmentForm = {
+      classId: '',
       directorId: '',
       evaluatorId: '',
       rejectionReason: '',
@@ -644,5 +641,9 @@ export class InfoComponent implements OnInit {
 
   closeRejectionModal() {
     this.isRejectionModalVisible = false;
+  }
+
+  private sanitizeNumeroSentencia(value: string): string {
+    return `${value || ''}`.replace(/[^0-9-]/g, '');
   }
 }

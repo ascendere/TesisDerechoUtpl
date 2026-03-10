@@ -48,6 +48,16 @@
   height: 16px;
 }
 
+.consistency-note {
+  width: 95%;
+  margin: 8px auto 0;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background-color: #f8f9fa;
+  color: #044170;
+  font-size: 13px;
+}
+
 /* Table Styles */
 .record-table {
   width: 95%;

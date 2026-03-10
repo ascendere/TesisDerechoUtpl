@@ -47,6 +47,28 @@
   position: relative;
 }
 
+.top-actions {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 8px;
+}
+
+.back-btn {
+  border: 1px solid #044170;
+  background: transparent;
+  color: #044170;
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.back-btn:hover {
+  background-color: #f0f4f8;
+}
+
 .subtitle {
   text-align: center;
   font-size: 14px;

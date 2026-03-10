@@ -32,6 +32,7 @@ import { AuthGuard } from './guards/auth.guard';
 import { AlertaComponent } from './components/alerta/alerta.component';
 import { RegistroComponent } from './components/registro/registro.component';
 import { DirectorioComponent } from './components/directorio/directorio.component';
+import { DirectorioAutorizadosComponent } from './components/directorio-autorizados/directorio-autorizados.component';
 
 const appRoutes: Routes = [
   { path: 'home', component: HomeComponent },
@@ -53,6 +54,11 @@ const appRoutes: Routes = [
   {
     path: 'directorio',
     component: DirectorioComponent,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'directorio-autorizados',
+    component: DirectorioAutorizadosComponent,
     canActivate: [AuthGuard],
   },
 ];
@@ -79,6 +85,7 @@ const appRoutes: Routes = [
     AlertaComponent,
     RegistroComponent,
     DirectorioComponent,
+    DirectorioAutorizadosComponent,
   ],
   imports: [
     BrowserModule,

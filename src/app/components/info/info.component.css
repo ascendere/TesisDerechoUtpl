@@ -88,35 +88,6 @@
   gap: 10px;
 }
 
-.modalidad {
-  display: flex;
-  gap: 35px;
-  justify-content: space-around;
-}
-
-/* Estilos de los botones de modalidad */
-.modalidad button {
-  border: none;
-  background-color: #ffffff; /* Mantiene el fondo blanco */
-  color: black; /* Color inicial del texto */
-  cursor: pointer;
-  font-size: 14px;
-  transition: color 0.2s ease;
-}
-
-/* Efecto hover solo en el texto */
-.modalidad button:hover {
-  color: #003F72;
-  font-weight: bold;
-}
-
-.modalidad button.active {
-  background-color: #003F72; 
-  color: white;             /* Texto blanco */
-  border-color: #f1b400;     /* Borde oro para resaltar */
-  box-shadow: 0 4px 8px rgba(30, 45, 77, 0.3);
-}
-
 
 .abs{
   background-color: rgba(4, 65, 112, 1);
@@ -433,23 +404,6 @@ select:focus, input:focus {
   box-shadow: 0 0 0 3px rgba(4, 65, 112, 0.1);
 }
 
-/* --- Grid para campos de datos --- */
-.grid-form {
-  display: grid;
-  grid-template-columns: 1fr 1fr; /* Dos columnas */
-  gap: 15px;
-}
-
-/* --- Sección de Excel --- */
-.excel-section {
-  background: #f8fafc;
-  border: 2px dashed #cbd5e0;
-  border-radius: 12px;
-  padding: 20px;
-  margin-top: 25px;
-  text-align: center;
-}
-
 /* --- Botones --- */
 .btn-primary-custom {
   background-color: rgba(4, 65, 112, 1);
@@ -477,42 +431,6 @@ select:focus, input:focus {
 
 .save-btn:hover { background: #002d50; }
 
-.upload-btn {
-  background: #ffab02;
-  color: #fff;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  margin-top: 10px;
-}
-
-.upload-btn:hover { background: #e69a00; }
-
-/* --- Alertas --- */
-.alert {
-  padding: 12px;
-  margin: 15px 30px 25px;
-  border-radius: 8px;
-  text-align: center;
-  font-weight: 500;
-}
-
-.success { background: #c6f6d5; color: #22543d; border: 1px solid #9ae6b4; }
-.error { background: #fed7d7; color: #822727; border: 1px solid #feb2b2; }
-
-/* --- Responsividad --- */
-@media (max-width: 500px) {
-  .grid-form { grid-template-columns: 1fr; }
-}
-
-.excel-section p{
-  font-size: 10px;
-}
-.excel-section p a {
-  font-size: 10px;
-}
 /* --- Contenedor tipo card --- */
 .tesis-container {
   background: #ffffff;
@@ -567,6 +485,12 @@ select:focus, input:focus {
   box-shadow: 0 0 0 3px rgba(4, 65, 112, 0.1);
 }
 
+.hint-text {
+  margin-top: 8px;
+  font-size: 0.9rem;
+  color: #4a5568;
+}
+
 /* Grid reutilizado */
 .grid-form {
   display: grid;
@@ -600,6 +524,13 @@ select:focus, input:focus {
 .modalidad button:hover {
   background: #044170;
   color: #fff;
+}
+
+.modalidad button.active {
+  background-color: #003f72;
+  color: white;
+  border-color: #f1b400;
+  box-shadow: 0 4px 8px rgba(30, 45, 77, 0.3);
 }
 
 /* Separador */

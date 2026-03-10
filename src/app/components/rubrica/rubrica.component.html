@@ -1,9 +1,15 @@
 <body>
   <div class="container">
+    <div class="top-actions">
+      <button class="back-btn" type="button" (click)="goBack()">← Regresar</button>
+    </div>
     <h2>Rúbrica de Calificación</h2>
     <p style="text-align: center">
-      Fecha de Actualización:
-      {{ rubricaLocal.fechaActualizacion.toDate() | date: "dd/MM/yyyy HH:mm" }}
+      Fecha de Actualización: {{
+        fechaActualizacion
+          ? (fechaActualizacion | date: "dd/MM/yyyy HH:mm")
+          : "No disponible"
+      }}
     </p>
     <table>
       <thead>

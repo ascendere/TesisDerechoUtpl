@@ -1,0 +1,655 @@
+<app-header></app-header>
+<app-text></app-text>
+
+<div class="authorized-page">
+  <div class="title-block">
+    <h2>Directorio Académico</h2>
+    <p>
+      Consulta centralizada de estudiantes, docentes, directores, evaluadores y
+      personal de secretaría.
+    </p>
+  </div>
+
+  <div class="main-switch">
+    <button
+      type="button"
+      class="switch-btn"
+      [class.active]="mainView === 'personas'"
+      (click)="setMainView('personas')"
+    >
+      Personas
+    </button>
+    <button
+      type="button"
+      class="switch-btn"
+      [class.active]="mainView === 'materias'"
+      (click)="setMainView('materias')"
+    >
+      Materias
+    </button>
+    <button
+      type="button"
+      class="switch-btn"
+      [class.active]="mainView === 'cursos'"
+      (click)="setMainView('cursos')"
+    >
+      Cursos
+    </button>
+  </div>
+
+  <ng-container *ngIf="mainView === 'personas'">
+    <div class="actions-row">
+      <button (click)="openCreateModal()" class="btn-primary-custom">
+        Crear nuevos usuarios / Importar Excel
+      </button>
+    </div>
+
+    <div class="filters-panel">
+      <div class="field">
+        <label for="roleFilter">Filtrar por rol</label>
+        <select
+          id="roleFilter"
+          [(ngModel)]="selectedRole"
+          (change)="applyFilters()"
+        >
+          <option value="todos">Todos</option>
+          <option *ngFor="let role of roleTypes" [value]="role">
+            {{ getRoleLabel(role) }}
+          </option>
+        </select>
+      </div>
+
+      <div class="field grow">
+        <label for="searchAuthorized">Buscar</label>
+        <input
+          id="searchAuthorized"
+          type="text"
+          [(ngModel)]="searchTerm"
+          (input)="applyFilters()"
+          placeholder="Nombre, correo o cédula"
+        />
+      </div>
+    </div>
+
+    <div class="summary-grid">
+      <button
+        type="button"
+        class="role-summary-card"
+        *ngFor="let role of roleTypes"
+        [class.active]="selectedRole === role"
+        (click)="setRoleFilter(role)"
+      >
+        <span class="role-name">{{ getRoleLabel(role) }}</span>
+        <span class="role-count">{{ getRoleCount(role) }}</span>
+      </button>
+    </div>
+
+    <div *ngIf="isLoadingAuthorized" class="state-card">
+      Cargando usuarios autorizados...
+    </div>
+
+    <div
+      *ngIf="!isLoadingAuthorized && filteredUsers.length === 0"
+      class="state-card"
+    >
+      No se encontraron registros con los filtros seleccionados.
+    </div>
+
+    <ng-container *ngIf="!isLoadingAuthorized && filteredUsers.length > 0">
+      <section class="role-section" *ngFor="let role of visibleRoles">
+        <h3>
+          {{ getRoleLabel(role) }}
+          <span>({{ getUsersByRole(role).length }})</span>
+        </h3>
+
+        <div class="cards-grid">
+          <article
+            class="user-card"
+            *ngFor="let user of getUsersByRole(role); trackBy: trackByEmail"
+          >
+            <ng-container
+              *ngIf="role === 'docente' && user.photoURL; else initialsAvatar"
+            >
+              <img [src]="user.photoURL" class="user-avatar-image" />
+            </ng-container>
+            <ng-template #initialsAvatar>
+              <div class="avatar">{{ getInitials(user) }}</div>
+            </ng-template>
+
+            <div class="user-data">
+              <h4>{{ getFullName(user) }}</h4>
+              <p>{{ getDisplayEmail(user) }}</p>
+
+              <small *ngIf="user.cedula">Cédula: {{ user.cedula }}</small>
+              <small *ngIf="user.degree">Título: {{ user.degree }}</small>
+              <small *ngIf="role === 'docente'">
+                {{
+                  user.description
+                    ? "Descripción cargada"
+                    : "Sin descripción cargada"
+                }}
+              </small>
+              <small *ngIf="user.pendingData?.subjectName">
+                Asignatura: {{ user.pendingData.subjectName }}
+              </small>
+
+              <span
+                class="status-badge"
+                [class.pending]="isNotRegistered(user)"
+                [class.registered]="user.status === 'registered'"
+              >
+                {{ getStatusLabel(user) }}
+              </span>
+            </div>
+
+            <div
+              class="card-actions teacher-actions"
+              *ngIf="role === 'docente' && isRegistered(user)"
+            >
+              <button
+                type="button"
+                class="btn-edit-icon"
+                (click)="openTeacherEditModal(user)"
+                aria-label="Editar docente"
+                title="Editar docente"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M4 20H8L18.5 9.5C18.8978 9.10218 19.1214 8.56261 19.1214 8C19.1214 7.43739 18.8978 6.89782 18.5 6.5C18.1022 6.10218 17.5626 5.87857 17 5.87857C16.4374 5.87857 15.8978 6.10218 15.5 6.5L5 17V20H4Z"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M13.5 8.5L16.5 11.5"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
+            </div>
+          </article>
+        </div>
+      </section>
+    </ng-container>
+  </ng-container>
+
+  <ng-container *ngIf="mainView === 'materias'">
+    <div class="filters-panel">
+      <div class="field grow">
+        <label for="searchSubject">Buscar materia</label>
+        <input
+          id="searchSubject"
+          type="text"
+          [(ngModel)]="directorySearchTerm"
+          (input)="searchDirectory()"
+          placeholder="Nombre de materia"
+        />
+      </div>
+    </div>
+
+    <ng-container *ngIf="directoryData$ | async as directoryItems">
+      <div *ngIf="directoryItems.length === 0" class="state-card">
+        No hay materias registradas.
+      </div>
+
+      <div class="cards-grid" *ngIf="directoryItems.length > 0">
+        <article class="user-card" *ngFor="let item of directoryItems">
+          <div class="avatar">
+            {{ (item.name || "M").charAt(0) | uppercase }}
+          </div>
+
+          <div class="user-data">
+            <h4>{{ item.name || "Sin nombre" }}</h4>
+            <p class="subject-description">
+              {{
+                item.description
+                  ? "Descripción cargada"
+                  : "Sin descripción cargada"
+              }}
+            </p>
+            <span class="subject-badge">
+              {{ item.questions?.length || 0 }} preguntas
+            </span>
+          </div>
+
+          <div class="card-actions">
+            <button
+              type="button"
+              class="btn-edit"
+              (click)="openDirectoryEditModal(item)"
+            >
+              Editar
+            </button>
+          </div>
+        </article>
+      </div>
+    </ng-container>
+  </ng-container>
+
+  <ng-container *ngIf="mainView === 'cursos'">
+    <div class="filters-panel">
+      <div class="field grow">
+        <label for="searchCourse">Buscar curso</label>
+        <input
+          id="searchCourse"
+          type="text"
+          [(ngModel)]="courseSearchTerm"
+          (input)="searchCourses()"
+          placeholder="Asignatura, paralelo, modalidad, docente o ciclo"
+        />
+      </div>
+    </div>
+
+    <ng-container *ngIf="coursesData$ | async as courses">
+      <div *ngIf="courses.length === 0" class="state-card">
+        No hay cursos registrados.
+      </div>
+
+      <div class="cards-grid" *ngIf="courses.length > 0">
+        <article class="user-card" *ngFor="let course of courses">
+          <div class="avatar">
+            {{ (course.subjectName || "C").charAt(0) | uppercase }}
+          </div>
+
+          <div class="user-data">
+            <h4>{{ course.subjectName || "Sin asignatura" }}</h4>
+            <small>Paralelo: {{ course.parallel || "Sin paralelo" }}</small>
+            <small
+              >Modalidad:
+              {{ getModalityLabel(course.type || course.modality) }}</small
+            >
+            <small>Ciclo: {{ course.cycleName || "Sin ciclo" }}</small>
+            <small>Docente: {{ course.professorName || "Sin docente" }}</small>
+            <small *ngIf="course.professorEmail"
+              >Correo: {{ course.professorEmail }}</small
+            >
+          </div>
+
+          <div class="card-actions teacher-actions">
+            <button
+              type="button"
+              class="btn-edit-icon"
+              (click)="openCourseEditModal(course)"
+              aria-label="Editar curso"
+              title="Editar curso"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <path
+                  d="M4 20H8L18.5 9.5C18.8978 9.10218 19.1214 8.56261 19.1214 8C19.1214 7.43739 18.8978 6.89782 18.5 6.5C18.1022 6.10218 17.5626 5.87857 17 5.87857C16.4374 5.87857 15.8978 6.10218 15.5 6.5L5 17V20H4Z"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M13.5 8.5L16.5 11.5"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
+        </article>
+      </div>
+    </ng-container>
+  </ng-container>
+
+  <div class="modal-overlay" *ngIf="showModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Agregar Usuarios al Sistema</h3>
+        <button class="close-btn" (click)="closeCreateModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="input-group">
+          <label><strong>¿Qué tipo de usuario crearás?</strong></label>
+          <select [(ngModel)]="selectedRoleForUpload">
+            <option [ngValue]="null" disabled>-- Selecciona un rol --</option>
+            <option value="director">Director</option>
+            <option value="evaluador">Equipo Evaluador</option>
+            <option value="estudiante">Estudiante</option>
+            <option value="docente">Docente</option>
+          </select>
+        </div>
+
+        <hr />
+
+        <div *ngIf="selectedRoleForUpload" class="manual-form">
+          <h4>Datos Personales</h4>
+          <div class="grid-form">
+            <input
+              type="text"
+              [(ngModel)]="newUser.nombre"
+              placeholder="Nombre (ej. Juan)"
+            />
+            <input
+              type="text"
+              [(ngModel)]="newUser.apellido"
+              placeholder="Apellido (ej. Pérez)"
+            />
+            <input
+              type="email"
+              [(ngModel)]="newUser.email"
+              placeholder="Correo electrónico"
+            />
+            <input
+              type="text"
+              [(ngModel)]="newUser.cedula"
+              placeholder="Cédula de identidad"
+            />
+          </div>
+
+          <div *ngIf="selectedRoleForUpload === 'docente'" class="extra-fields">
+            <h4>Datos Académicos</h4>
+            <div class="grid-form">
+              <input
+                type="text"
+                [(ngModel)]="newUser.asignatura"
+                placeholder="Asignatura (ej. Derecho Penal)"
+              />
+              <input
+                type="text"
+                [(ngModel)]="newUser.paralelo"
+                placeholder="Paralelo"
+              />
+              <input
+                type="text"
+                [(ngModel)]="newUser.titulo"
+                placeholder="Título (ej. Mgtr)"
+              />
+              <input
+                type="text"
+                [(ngModel)]="newUser.modalidad"
+                placeholder="Modalidad (ej. Presencial o Distancia)"
+              />
+            </div>
+          </div>
+
+          <button
+            (click)="saveManualUser()"
+            class="save-btn"
+            [disabled]="isProcessingUser"
+          >
+            {{ isProcessingUser ? "Guardando..." : "Guardar Individualmente" }}
+          </button>
+        </div>
+
+        <hr />
+
+        <div class="excel-section">
+          <h4>O cargar desde Excel</h4>
+          <p>
+            Descarga la plantilla {{ currentTemplateLabel }}
+            <button
+              type="button"
+              class="template-download-btn"
+              [disabled]="!selectedRoleForUpload"
+              (click)="downloadCurrentTemplate()"
+            >
+              aquí
+            </button
+            >
+          </p>
+          <small class="excel-hint" *ngIf="!selectedRoleForUpload">
+            Selecciona un rol para habilitar la descarga de la plantilla.
+          </small>
+          <br />
+          <input
+            [disabled]="!selectedRoleForUpload"
+            type="file"
+            (change)="onFileSelected($event)"
+            accept=".xlsx, .xls"
+          />
+          <button
+            [disabled]="
+              !selectedFile || !selectedRoleForUpload || isProcessingUser
+            "
+            (click)="processFile()"
+            class="upload-btn"
+          >
+            {{ isProcessingUser ? "Importando..." : "Importar Archivo" }}
+          </button>
+        </div>
+      </div>
+
+      <div
+        *ngIf="feedbackMessage"
+        [ngClass]="{ success: !isError, error: isError }"
+        class="alert"
+      >
+        {{ feedbackMessage }}
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" *ngIf="showDirectoryEditModal">
+    <div class="modal-content edit-modal">
+      <div class="modal-header">
+        <h3>Editar materia</h3>
+        <button class="close-btn" (click)="closeDirectoryEditModal()">
+          &times;
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <textarea
+          [(ngModel)]="selectedDirectoryItem.description"
+          placeholder="Descripción académica"
+        ></textarea>
+
+        <div class="questions-list">
+          <div
+            class="question-item"
+            *ngFor="let q of selectedDirectoryItem.questions; let i = index"
+          >
+            <textarea
+              [(ngModel)]="selectedDirectoryItem.questions[i]"
+            ></textarea>
+            <button type="button" (click)="removeDirectoryQuestion(i)">
+              Eliminar
+            </button>
+          </div>
+
+          <button
+            type="button"
+            class="btn-add"
+            (click)="addDirectoryQuestion()"
+          >
+            + Agregar pregunta
+          </button>
+        </div>
+
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="btn-secondary"
+            (click)="closeDirectoryEditModal()"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="btn-save-inline"
+            (click)="saveDirectoryModalChanges()"
+          >
+            Guardar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" *ngIf="showTeacherEditModal">
+    <div class="modal-content edit-modal teacher-modal">
+      <div class="modal-header">
+        <h3>Editar docente</h3>
+        <button class="close-btn" (click)="closeTeacherEditModal()">
+          &times;
+        </button>
+      </div>
+
+      <div class="modal-body teacher-modal-body">
+        <div class="teacher-top-block">
+          <img
+            [src]="
+              teacherPhotoPreview ||
+              selectedTeacherItem?.photoURL ||
+              'assets/no-user.png'
+            "
+            class="img-docente-modal"
+          />
+
+          <div class="teacher-top-actions">
+            <input
+              type="file"
+              #teacherPhotoInput
+              hidden
+              accept="image/*"
+              (change)="onTeacherPhotoSelected($event)"
+            />
+
+            <button
+              class="upload-btn teacher-upload-btn"
+              (click)="teacherPhotoInput.click()"
+            >
+              Cambiar foto
+            </button>
+            <small>Imagen de perfil del docente</small>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>Correo</label>
+          <input [value]="selectedTeacherItem?.email" disabled />
+        </div>
+
+        <div class="input-group">
+          <label>Título académico</label>
+          <input
+            type="text"
+            [(ngModel)]="selectedTeacherItem.degree"
+            placeholder="Ej: Mgtr. en Derecho"
+          />
+        </div>
+
+        <div class="input-group">
+          <label>Descripción</label>
+          <textarea
+            [(ngModel)]="selectedTeacherItem.description"
+            placeholder="Biografía o descripción del docente"
+          ></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="btn-secondary"
+            (click)="closeTeacherEditModal()"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="btn-save-inline"
+            (click)="saveTeacherProfile()"
+            [disabled]="isSavingTeacher"
+          >
+            {{ isSavingTeacher ? "Guardando..." : "Guardar" }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" *ngIf="showCourseEditModal">
+    <div class="modal-content edit-modal course-modal">
+      <div class="modal-header">
+        <h3>Editar curso</h3>
+        <button class="close-btn" (click)="closeCourseEditModal()">
+          &times;
+        </button>
+      </div>
+
+      <div class="modal-body course-modal-body">
+        <div class="input-group">
+          <label>Asignatura</label>
+          <input
+            [value]="selectedCourseItem?.subjectName || 'Sin asignatura'"
+            disabled
+          />
+        </div>
+
+        <div class="grid-form">
+          <div class="input-group">
+            <label>Paralelo</label>
+            <input
+              type="text"
+              [(ngModel)]="selectedCourseItem.parallel"
+              placeholder="Ej: A"
+            />
+          </div>
+
+          <div class="input-group">
+            <label>Modalidad</label>
+            <select [(ngModel)]="selectedCourseItem.type">
+              <option value="presencial">Presencial</option>
+              <option value="distancia">Distancia</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>Docente asignado</label>
+          <select [(ngModel)]="selectedCourseItem.professorId">
+            <option value="">Sin docente asignado</option>
+            <option *ngFor="let teacher of courseTeachers" [value]="teacher.id">
+              {{ getTeacherDisplayLabel(teacher) }}
+            </option>
+          </select>
+        </div>
+
+        <p class="sync-note">
+          Al guardar, también se sincronizan los datos del docente y curso en
+          las tesis relacionadas.
+        </p>
+
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="btn-secondary"
+            (click)="closeCourseEditModal()"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="btn-save-inline"
+            (click)="saveCourseChanges()"
+            [disabled]="isSavingCourse"
+          >
+            {{ isSavingCourse ? "Guardando..." : "Guardar" }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<app-footer2></app-footer2>

@@ -6,6 +6,7 @@ import User from '../../interfaces/user.interface';
 import { Observable } from 'rxjs';
 import { ActivatedRoute } from '@angular/router';
 import { AlertaService } from '../../services/alert.service';
+import { ConsultasService } from '../../services/consultas.service';
 
 @Component({
   selector: 'app-flujo',
@@ -25,6 +26,8 @@ export class FlujoComponent implements OnInit {
   documentoReunion: File | null = null; // Archivo seleccionado para la reunión
   ultimoPorcentajeEstudiante: number = 0;
   ultimoPorcentajeDirector: number = 0;
+  activeCycleId: string = '';
+  activeCycleName: string = '';
 
   tesisId: string | null = null;
 
@@ -45,6 +48,7 @@ export class FlujoComponent implements OnInit {
     private firestore: AngularFirestore,
     private storage: AngularFireStorage,
     private loginService: LoginService,
+    private consultasService: ConsultasService,
     private route: ActivatedRoute, // Inyecta el LoginService
     private alertaService: AlertaService,
   ) {}
@@ -56,6 +60,7 @@ export class FlujoComponent implements OnInit {
 
       if (this.tesisId) {
         // Verificación para evitar el uso de null
+        this.loadActiveCycle();
         // Obtener el usuario loggeado al inicializar el componente
         this.loginService.getCurrentUser().subscribe((user) => {
           if (user) {
@@ -70,6 +75,23 @@ export class FlujoComponent implements OnInit {
         console.error('No se encontró el ID de la tesis.');
       }
     });
+  }
+
+  private loadActiveCycle(): void {
+    this.consultasService
+      .getActiveCycle()
+      .pipe()
+      .subscribe({
+        next: (cycle) => {
+          this.activeCycleId = cycle?.id || '';
+          this.activeCycleName = cycle?.name || '';
+        },
+        error: (error) => {
+          this.activeCycleId = '';
+          this.activeCycleName = '';
+          console.error('Error al cargar ciclo activo:', error);
+        },
+      });
   }
 
   cargarEvidencias() {
@@ -129,6 +151,15 @@ export class FlujoComponent implements OnInit {
 
   // Abre el modal para agregar nueva evidencia
   openAddDialog() {
+    if (!this.activeCycleId) {
+      this.alertaService.mostrarAlerta(
+        'error',
+        'Sin ciclo activo',
+        'No existe un ciclo académico activo (estatus=true).',
+      );
+      return;
+    }
+
     this.mostrarDialogoAgregar = true;
     this.form.fechaRegistro = new Date().toISOString().split('T')[0]; // Asigna la fecha actual en formato YYYY-MM-DD
   }
@@ -162,6 +193,16 @@ export class FlujoComponent implements OnInit {
   // Método para enviar el formulario de agregar nueva evidencia
   submit() {
     if (this.isUploading) return; // Evita múltiples envíos simultáneos
+
+    if (!this.activeCycleId) {
+      this.alertaService.mostrarAlerta(
+        'error',
+        'Sin ciclo activo',
+        'No existe un ciclo académico activo para registrar evidencias.',
+      );
+      return;
+    }
+
     if (!this.documento || !this.tesisId || !this.usuarioLoggeado) {
       this.alertaService.mostrarAlerta(
         'error',
@@ -221,7 +262,7 @@ export class FlujoComponent implements OnInit {
         fileRef.getDownloadURL().subscribe({
           next: (downloadUrl) => {
             const nuevaEvidencia = {
-              periodo: 'Oct/2023 - Feb/2024',
+              periodo: this.activeCycleName || 'Sin ciclo activo',
               bimestre: this.form.bimestre,
               tipoEvidencia: this.form.tipoEvidencia,
               subcategoria: this.form.subcategoria,
@@ -239,6 +280,21 @@ export class FlujoComponent implements OnInit {
               .doc(this.tesisId!)
               .collection('flujo')
               .add(nuevaEvidencia)
+              .then(() => {
+                if (esDirector) {
+                  if (this.form.porcentaje >= 100) {
+                    this.firestore
+                      .collection('tesis')
+                      .doc(this.tesisId!)
+                      .update({ status: 'Completado' });
+                  }
+                  return this.firestore
+                    .collection('tesis')
+                    .doc(this.tesisId!)
+                    .update({ progress: this.form.porcentaje });
+                }
+                return Promise.resolve();
+              })
               .then(() => {
                 this.alertaService.mostrarAlerta(
                   'exito',
@@ -284,6 +340,15 @@ export class FlujoComponent implements OnInit {
 
   // Abrir el modal de reuniones y asignar la fecha de registro actual
   openReunionDialog() {
+    if (!this.activeCycleId) {
+      this.alertaService.mostrarAlerta(
+        'error',
+        'Sin ciclo activo',
+        'No existe un ciclo académico activo (estatus=true).',
+      );
+      return;
+    }
+
     this.fechaRegistroReunion = new Date().toISOString();
     this.mostrarDialogoReunion = true;
   }
@@ -355,6 +420,16 @@ export class FlujoComponent implements OnInit {
   // Método para enviar el formulario de reunión
   submitReunion() {
     if (this.isUploading) return; // Evita múltiples envíos simultáneos
+
+    if (!this.activeCycleId) {
+      this.alertaService.mostrarAlerta(
+        'error',
+        'Sin ciclo activo',
+        'No existe un ciclo académico activo para registrar reuniones.',
+      );
+      return;
+    }
+
     this.isUploading = true;
     if (!this.tesisId) {
       this.isUploading = false;
@@ -385,7 +460,7 @@ export class FlujoComponent implements OnInit {
     }
 
     const nuevaReunion = {
-      periodo: 'Oct/2023 - Feb/2024',
+      periodo: this.activeCycleName || 'Sin ciclo activo',
       fechaRegistro: this.fechaRegistroReunion,
       fechaReunion: this.reunionForm.fechaReunion,
       descripcion: this.reunionForm.descripcion,

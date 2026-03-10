@@ -38,6 +38,28 @@
   width: 340px;
 }
 
+.top-actions {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 8px;
+}
+
+.back-btn {
+  border: 1px solid #044170;
+  background: transparent;
+  color: #044170;
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.back-btn:hover {
+  background-color: #f0f4f8;
+}
+
 h2 {
   text-align: center;
   margin-bottom: 20px;
@@ -60,6 +82,13 @@ h2 {
   border: 1px solid #ccc;
   border-radius: 5px;
   font-size: 16px;
+}
+
+.login-error {
+  margin-top: 6px;
+  margin-bottom: 0;
+  color: #d32f2f;
+  font-size: 12px;
 }
 
 .options {

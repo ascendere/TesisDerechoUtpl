@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { Location } from '@angular/common';
 import { AuthService } from 'src/app/services/auth.service';
 import { Router } from '@angular/router';
 @Component({
@@ -11,7 +12,15 @@ export class RegistroComponent {
   cedula: string = '';
   password: string = '';
   confirmPassword: string = '';
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(
+    private authService: AuthService,
+    private router: Router,
+    private location: Location,
+  ) {}
+
+  goBack(): void {
+    this.location.back();
+  }
 
   async registrar() {
     // 1. Verificación de campos vacíos

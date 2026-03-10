@@ -110,6 +110,65 @@ export class ConsultasService {
       );
   }
 
+  getClassesForSecretaryAssignment(cycleId?: string): Observable<
+    (Class & {
+      professorName: string;
+      professorEmail: string;
+      professorId: string;
+    })[]
+  > {
+    const normalizedCycleId = `${cycleId || ''}`.trim();
+
+    return this.firestore
+      .collection<Class>('classes')
+      .snapshotChanges()
+      .pipe(
+        map((actions) =>
+          actions.map((action) => ({
+            id: action.payload.doc.id,
+            ...(action.payload.doc.data() as any),
+          })),
+        ),
+        map((classes: any[]) => {
+          if (!normalizedCycleId) {
+            return classes;
+          }
+
+          return classes.filter((classItem: any) => {
+            const classCycleId = `${classItem?.cycleId || classItem?.cicleId || ''}`.trim();
+            return classCycleId === normalizedCycleId;
+          });
+        }),
+        switchMap((classes: any[]) => {
+          const classObservables = classes.map((classItem: any) =>
+            this.firestore
+              .collection<User>('users')
+              .doc(classItem.professorId)
+              .valueChanges()
+              .pipe(
+                take(1),
+                map((user) => ({
+                  ...classItem,
+                  professorName: user
+                    ? `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
+                      'Sin docente'
+                    : 'Sin docente',
+                  professorEmail: user?.email || '',
+                  professorId: user?.id || classItem?.professorId || '',
+                })),
+              ),
+          );
+
+          return classObservables.length ? combineLatest(classObservables) : of([]);
+        }),
+        map((classes: any[]) =>
+          [...classes].sort((a: any, b: any) =>
+            `${a?.subjectName || ''}`.localeCompare(`${b?.subjectName || ''}`),
+          ),
+        ),
+      );
+  }
+
   // Método para guardar datos personales como subcolección
   savePersonalData(userId: string, personalData: any): Promise<void> {
     // Crear una subcolección llamada 'personalData' dentro del documento del usuario
@@ -450,6 +509,31 @@ export class ConsultasService {
     return this.firestore.collection('cycle').valueChanges({ idField: 'id' });
   }
 
+  getActiveCycle() {
+    return this.firestore
+      .collection('cycle')
+      .snapshotChanges()
+      .pipe(
+        map((actions) =>
+          actions.map((action) => ({
+            id: action.payload.doc.id,
+            ...(action.payload.doc.data() as any),
+          })),
+        ),
+        map((cycles: any[]) => {
+          return (
+            cycles.find((cycle) =>
+              this.isCycleActive(cycle?.estatus ?? cycle?.status),
+            ) || null
+          );
+        }),
+      );
+  }
+
+  private isCycleActive(value: any): boolean {
+    return value === true;
+  }
+
   async assignRandomStaff(
     thesisId: string,
     role: string,
@@ -656,7 +740,15 @@ export class ConsultasService {
       .pipe(take(1));
   }
 
-  getStaffWithWorkload(): Observable<User[]> {
+  getStaffWithWorkload(
+    activeCycleName?: string,
+    activeCycleId?: string,
+  ): Observable<User[]> {
+    const normalizedCycleName = `${activeCycleName || ''}`
+      .trim()
+      .toLowerCase();
+    const normalizedCycleId = `${activeCycleId || ''}`.trim();
+
     return this.firestore
       .collection('users', (ref) =>
         ref.where('role', 'in', ['director', 'evaluador']),
@@ -673,24 +765,47 @@ export class ConsultasService {
             const staffMember = member as User;
 
             const roleField =
-              staffMember.role === 'director' ? 'directorId' : 'evaluadorId';
+              staffMember.role === 'director' ? 'directorId' : 'evaluatorId';
 
             return this.firestore
-              .collection('tesis', (ref) =>
-                ref
-                  .where(roleField, '==', staffMember.id)
-                  .where('status', '==', 'Aprobado'),
-              )
+              .collection('tesis', (ref) => ref.where(roleField, '==', staffMember.id))
               .valueChanges()
               .pipe(
                 take(1),
                 map(
-                  (theses) =>
-                    ({
+                  (theses: any[]) => {
+                    const filteredTheses = (theses || []).filter((thesis) => {
+                      const thesisCycleName = `${thesis?.ciclo || ''}`
+                        .trim()
+                        .toLowerCase();
+                      const thesisCycleId = `${thesis?.cycleId || thesis?.cicleId || ''}`.trim();
+                      const thesisStatus = `${thesis?.status || ''}`
+                        .trim()
+                        .toLowerCase();
+
+                      const hasCycleFilter =
+                        !!normalizedCycleName || !!normalizedCycleId;
+
+                      let matchesCycle = true;
+                      if (hasCycleFilter) {
+                        const matchesByName = normalizedCycleName
+                          ? thesisCycleName === normalizedCycleName
+                          : false;
+                        const matchesById = normalizedCycleId
+                          ? thesisCycleId === normalizedCycleId
+                          : false;
+                        matchesCycle = matchesByName || matchesById;
+                      }
+
+                      return matchesCycle && thesisStatus !== 'rechazado';
+                    });
+
+                    return {
                       ...staffMember,
-                      currentWorkload: theses.length,
-                    }) as User,
-                ), // Aseguramos el retorno como User
+                      currentWorkload: filteredTheses.length,
+                    } as User;
+                  },
+                ),
               );
           });
           return forkJoin(workloadCounts$);

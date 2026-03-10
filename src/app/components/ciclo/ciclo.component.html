@@ -48,6 +48,11 @@
   </div>
 </div>
 
+<div class="consistency-note" *ngIf="!esSecretario && listaMaterias.length > 0">
+  Si detecta alguna inconsistencia en las materias cargadas, contacte a la
+  secretaría de la carrera.
+</div>
+
 <table class="record-table">
   <thead>
     <tr>
@@ -106,7 +111,12 @@
   </tbody>
 </table>
 
-<p *ngIf="listaMaterias.length === 0" class="empty-msg">
+<p *ngIf="listaMaterias.length === 0 && !esSecretario" class="empty-msg">
+  Si no hay materias cargadas, es porque no tiene pendientes por aprobar o
+  porque la secretaría de la carrera aún no las carga.
+</p>
+
+<p *ngIf="listaMaterias.length === 0 && esSecretario" class="empty-msg">
   No hay materias registradas aún.
 </p>
 <app-footer2></app-footer2>

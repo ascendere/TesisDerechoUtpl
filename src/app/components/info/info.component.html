@@ -26,10 +26,12 @@
       <table>
         <thead>
           <tr>
+            <th>Nombre de Director</th>
             <th>Nombre de docente</th>
-            <th>Facultad</th>
             <th>Carrera</th>
             <th>Asignatura</th>
+            <th>Periodo Academico</th>
+            <th>Fecha de Creación</th>
             <th>Estado</th>
             <th>Avance</th>
             <th>Acción</th>
@@ -37,10 +39,12 @@
         </thead>
         <tbody>
           <tr *ngFor="let tesis of filteredTesis">
+            <td>{{ tesis.directorName || "Sin Director Asignado" }}</td>
             <td>{{ tesis.professorName }}</td>
-            <td>Facultad de Ciencias Jurídicas y Políticas</td>
             <td>Derecho</td>
             <td>{{ tesis.className }}</td>
+            <td>{{ tesis.ciclo }}</td>
+            <td>{{ tesis.createdAt.toDate() | date: "dd/MM/yyyy" }}</td>
             <td
               [ngClass]="{
                 completado: tesis.status === 'Completado',
@@ -106,6 +110,10 @@
             <input
               [(ngModel)]="datosTesis.numeroSentencia"
               placeholder="Número de Sentencia"
+              inputmode="numeric"
+              pattern="[0-9-]*"
+              (keydown)="onNumeroSentenciaKeydown($event)"
+              (input)="onNumeroSentenciaInput($event)"
             />
             <input [(ngModel)]="datosTesis.asunto" placeholder="Asunto" />
           </div>
@@ -122,9 +130,9 @@
 
           <!-- Ciclo -->
           <div class="input-group">
-            <label>Seleccionar ciclo</label>
-            <select [(ngModel)]="selectedCycleId">
-              <option [ngValue]="null" disabled>-- Elige un ciclo --</option>
+            <label>Ciclo académico activo</label>
+            <select [(ngModel)]="selectedCycleId" disabled>
+              <option [ngValue]="''" disabled>-- Sin ciclo activo --</option>
               <option *ngFor="let ciclo of cycles" [ngValue]="ciclo.id">
                 {{ ciclo.name }}
               </option>
@@ -274,7 +282,8 @@
     <br />
     <p>
       Las siguientes solicitudes corresponden a segundas tesis o casos
-      especiales que requieren validación.
+      especiales que requieren validación. El secretario podrá ajustar clase
+      (docente vinculado), director y evaluador antes de aprobar.
     </p>
     <div class="tabla-container">
       <table>
@@ -385,6 +394,22 @@
 
       <div *ngIf="modalAction === 'approve'">
         <div class="grid-form">
+          <div class="form-group full-width">
+            <h4>Asignar Clase (actualiza Docente)</h4>
+            <select [(ngModel)]="assignmentForm.classId">
+              <option value="" disabled>Seleccione Clase</option>
+              <option *ngFor="let c of approvalClasses" [value]="c.id">
+                {{ c.subjectName }} - Paralelo {{ c.parallel || "-" }} ({{
+                  c.professorName || "Sin docente"
+                }})
+              </option>
+            </select>
+            <p class="hint-text" *ngIf="selectedApprovalClass">
+              Docente vinculado: {{ selectedApprovalClass.professorName }} —
+              {{ selectedApprovalClass.professorEmail || "Sin correo" }}
+            </p>
+          </div>
+
           <div class="form-group">
             <h4>Asignar Director de Tesis</h4>
             <select [(ngModel)]="assignmentForm.directorId">
@@ -431,7 +456,9 @@
           (click)="confirmProcess()"
           [disabled]="
             modalAction === 'approve'
-              ? !assignmentForm.directorId || !assignmentForm.evaluatorId
+              ? !assignmentForm.classId ||
+                !assignmentForm.directorId ||
+                !assignmentForm.evaluatorId
               : !assignmentForm.rejectionReason
           "
           style="background: #044170; color: white"
@@ -442,136 +469,6 @@
               : "Publicar Rechazo"
           }}
         </button>
-      </div>
-    </div>
-  </div>
-  <div *ngIf="userRole === 'secretario'">
-    <h2>Gestión de Usuarios</h2>
-
-    <button (click)="openCreateModal()" class="btn-primary-custom">
-      Crear nuevos usuarios / Importar Excel
-    </button>
-
-    <div class="modal-overlay" *ngIf="showModal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>Agregar Usuarios al Sistema</h3>
-          <button class="close-btn" (click)="showModal = false">&times;</button>
-        </div>
-
-        <div class="modal-body">
-          <div class="input-group">
-            <label><strong>¿Qué tipo de usuario crearás?</strong></label>
-            <select [(ngModel)]="selectedRoleForUpload">
-              <option [ngValue]="null" disabled>-- Selecciona un rol --</option>
-              <option value="director">Director</option>
-              <option value="evaluador">Equipo Evaluador</option>
-              <option value="estudiante">Estudiante</option>
-              <option value="docente">Docente</option>
-            </select>
-          </div>
-
-          <hr />
-
-          <div *ngIf="selectedRoleForUpload" class="manual-form">
-            <h4>Datos Personales</h4>
-            <div class="grid-form">
-              <input
-                type="text"
-                [(ngModel)]="newUser.nombre"
-                placeholder="Nombre (ej. Juan)"
-              />
-              <input
-                type="text"
-                [(ngModel)]="newUser.apellido"
-                placeholder="Apellido (ej. Pérez)"
-              />
-              <input
-                type="email"
-                [(ngModel)]="newUser.email"
-                placeholder="Correo electrónico"
-              />
-              <input
-                type="text"
-                [(ngModel)]="newUser.cedula"
-                placeholder="Cédula de identidad"
-              />
-            </div>
-
-            <div
-              *ngIf="selectedRoleForUpload === 'docente'"
-              class="extra-fields"
-            >
-              <h4>Datos Académicos</h4>
-              <div class="grid-form">
-                <input
-                  type="text"
-                  [(ngModel)]="newUser.asignatura"
-                  placeholder="Asignatura (ej. Derecho Penal)"
-                />
-                <input
-                  type="text"
-                  [(ngModel)]="newUser.paralelo"
-                  placeholder="Paralelo"
-                />
-                <input
-                  type="text"
-                  [(ngModel)]="newUser.titulo"
-                  placeholder="Título (ej. Mgtr)"
-                />
-                <input
-                  type="text"
-                  [(ngModel)]="newUser.modalidad"
-                  placeholder="Modalidad (ej. Presencial o Distancia)"
-                />
-              </div>
-            </div>
-
-            <button
-              (click)="saveManualUser()"
-              class="save-btn"
-              [disabled]="isLoading"
-            >
-              {{ isLoading ? "Guardando..." : "Guardar Individualmente" }}
-            </button>
-          </div>
-
-          <hr />
-
-          <div class="excel-section">
-            <h4>O cargar desde Excel</h4>
-            <p>
-              Descarga la plantilla de Excel
-              <a
-                href="https://firebasestorage.googleapis.com/v0/b/tesisderechoutpl.appspot.com/o/PlantillaUpload%2FPlantilla.xlsx?alt=media&token=34aafdb8-86f4-478d-800f-2c21cef1651c"
-                download
-                >aquí</a
-              >
-            </p>
-            <br />
-            <input
-              [disabled]="!selectedRoleForUpload"
-              type="file"
-              (change)="onFileSelected($event)"
-              accept=".xlsx, .xls"
-            />
-            <button
-              [disabled]="!selectedFile || !selectedRoleForUpload || isLoading"
-              (click)="processFile()"
-              class="upload-btn"
-            >
-              Importar Archivo
-            </button>
-          </div>
-        </div>
-
-        <div
-          *ngIf="feedbackMessage"
-          [ngClass]="{ success: !isError, error: isError }"
-          class="alert"
-        >
-          {{ feedbackMessage }}
-        </div>
       </div>
     </div>
   </div>
