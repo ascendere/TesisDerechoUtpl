@@ -135,7 +135,8 @@ export class ConsultasService {
           }
 
           return classes.filter((classItem: any) => {
-            const classCycleId = `${classItem?.cycleId || classItem?.cicleId || ''}`.trim();
+            const classCycleId =
+              `${classItem?.cycleId || classItem?.cicleId || ''}`.trim();
             return classCycleId === normalizedCycleId;
           });
         }),
@@ -159,7 +160,9 @@ export class ConsultasService {
               ),
           );
 
-          return classObservables.length ? combineLatest(classObservables) : of([]);
+          return classObservables.length
+            ? combineLatest(classObservables)
+            : of([]);
         }),
         map((classes: any[]) =>
           [...classes].sort((a: any, b: any) =>
@@ -744,9 +747,7 @@ export class ConsultasService {
     activeCycleName?: string,
     activeCycleId?: string,
   ): Observable<User[]> {
-    const normalizedCycleName = `${activeCycleName || ''}`
-      .trim()
-      .toLowerCase();
+    const normalizedCycleName = `${activeCycleName || ''}`.trim().toLowerCase();
     const normalizedCycleId = `${activeCycleId || ''}`.trim();
 
     return this.firestore
@@ -768,44 +769,45 @@ export class ConsultasService {
               staffMember.role === 'director' ? 'directorId' : 'evaluatorId';
 
             return this.firestore
-              .collection('tesis', (ref) => ref.where(roleField, '==', staffMember.id))
+              .collection('tesis', (ref) =>
+                ref.where(roleField, '==', staffMember.id),
+              )
               .valueChanges()
               .pipe(
                 take(1),
-                map(
-                  (theses: any[]) => {
-                    const filteredTheses = (theses || []).filter((thesis) => {
-                      const thesisCycleName = `${thesis?.ciclo || ''}`
-                        .trim()
-                        .toLowerCase();
-                      const thesisCycleId = `${thesis?.cycleId || thesis?.cicleId || ''}`.trim();
-                      const thesisStatus = `${thesis?.status || ''}`
-                        .trim()
-                        .toLowerCase();
+                map((theses: any[]) => {
+                  const filteredTheses = (theses || []).filter((thesis) => {
+                    const thesisCycleName = `${thesis?.ciclo || ''}`
+                      .trim()
+                      .toLowerCase();
+                    const thesisCycleId =
+                      `${thesis?.cycleId || thesis?.cicleId || ''}`.trim();
+                    const thesisStatus = `${thesis?.status || ''}`
+                      .trim()
+                      .toLowerCase();
 
-                      const hasCycleFilter =
-                        !!normalizedCycleName || !!normalizedCycleId;
+                    const hasCycleFilter =
+                      !!normalizedCycleName || !!normalizedCycleId;
 
-                      let matchesCycle = true;
-                      if (hasCycleFilter) {
-                        const matchesByName = normalizedCycleName
-                          ? thesisCycleName === normalizedCycleName
-                          : false;
-                        const matchesById = normalizedCycleId
-                          ? thesisCycleId === normalizedCycleId
-                          : false;
-                        matchesCycle = matchesByName || matchesById;
-                      }
+                    let matchesCycle = true;
+                    if (hasCycleFilter) {
+                      const matchesByName = normalizedCycleName
+                        ? thesisCycleName === normalizedCycleName
+                        : false;
+                      const matchesById = normalizedCycleId
+                        ? thesisCycleId === normalizedCycleId
+                        : false;
+                      matchesCycle = matchesByName || matchesById;
+                    }
 
-                      return matchesCycle && thesisStatus !== 'rechazado';
-                    });
+                    return matchesCycle && thesisStatus !== 'rechazado';
+                  });
 
-                    return {
-                      ...staffMember,
-                      currentWorkload: filteredTheses.length,
-                    } as User;
-                  },
-                ),
+                  return {
+                    ...staffMember,
+                    currentWorkload: filteredTheses.length,
+                  } as User;
+                }),
               );
           });
           return forkJoin(workloadCounts$);

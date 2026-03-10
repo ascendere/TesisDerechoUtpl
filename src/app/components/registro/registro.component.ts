@@ -51,7 +51,7 @@ export class RegistroComponent {
       await this.authService.registrarYVincularPerfil(
         this.email,
         this.password,
-        this.cedula
+        this.cedula,
       );
       alert('¡Cuenta creada y vinculada exitosamente!');
       this.router.navigate(['/login']);

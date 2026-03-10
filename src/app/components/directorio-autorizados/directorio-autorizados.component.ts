@@ -323,7 +323,8 @@ export class DirectorioAutorizadosComponent implements OnInit, OnDestroy {
   }
 
   getTeacherDisplayLabel(teacher: any): string {
-    const fullName = `${teacher?.firstName || teacher?.nombre || ''} ${teacher?.lastName || teacher?.apellido || ''}`.trim();
+    const fullName =
+      `${teacher?.firstName || teacher?.nombre || ''} ${teacher?.lastName || teacher?.apellido || ''}`.trim();
 
     if (fullName && teacher?.email) {
       return `${fullName} - ${teacher.email}`;
@@ -631,7 +632,8 @@ export class DirectorioAutorizadosComponent implements OnInit, OnDestroy {
 
     try {
       const degree = `${this.selectedTeacherItem.degree || ''}`.trim();
-      const description = `${this.selectedTeacherItem.description || ''}`.trim();
+      const description =
+        `${this.selectedTeacherItem.description || ''}`.trim();
 
       await this.directorioService.updateTeacherProfileByEmail(
         this.selectedTeacherItem.email,
@@ -642,10 +644,11 @@ export class DirectorioAutorizadosComponent implements OnInit, OnDestroy {
       );
 
       if (this.teacherPhotoFile) {
-        const uploadedPhoto = await this.directorioService.uploadTeacherPhotoByEmail(
-          this.selectedTeacherItem.email,
-          this.teacherPhotoFile,
-        );
+        const uploadedPhoto =
+          await this.directorioService.uploadTeacherPhotoByEmail(
+            this.selectedTeacherItem.email,
+            this.teacherPhotoFile,
+          );
         this.selectedTeacherItem.photoURL = uploadedPhoto;
       }
 
@@ -676,7 +679,9 @@ export class DirectorioAutorizadosComponent implements OnInit, OnDestroy {
   }
 
   searchCourses(): void {
-    this.coursesData$ = this.directorioService.getCourses(this.courseSearchTerm);
+    this.coursesData$ = this.directorioService.getCourses(
+      this.courseSearchTerm,
+    );
   }
 
   loadCourseTeachers(): void {
@@ -686,12 +691,14 @@ export class DirectorioAutorizadosComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (teachers) => {
           this.courseTeachers = [...(teachers || [])].sort((a: any, b: any) => {
-            const nameA = `${a?.firstName || a?.nombre || ''} ${a?.lastName || a?.apellido || ''}`
-              .trim()
-              .toLowerCase();
-            const nameB = `${b?.firstName || b?.nombre || ''} ${b?.lastName || b?.apellido || ''}`
-              .trim()
-              .toLowerCase();
+            const nameA =
+              `${a?.firstName || a?.nombre || ''} ${a?.lastName || a?.apellido || ''}`
+                .trim()
+                .toLowerCase();
+            const nameB =
+              `${b?.firstName || b?.nombre || ''} ${b?.lastName || b?.apellido || ''}`
+                .trim()
+                .toLowerCase();
             return nameA.localeCompare(nameB);
           });
         },
@@ -731,9 +738,7 @@ export class DirectorioAutorizadosComponent implements OnInit, OnDestroy {
     const parallel = `${this.selectedCourseItem.parallel || ''}`
       .trim()
       .toUpperCase();
-    const type = `${this.selectedCourseItem.type || ''}`
-      .trim()
-      .toLowerCase();
+    const type = `${this.selectedCourseItem.type || ''}`.trim().toLowerCase();
 
     if (!parallel) {
       this.alertaService.mostrarAlerta(

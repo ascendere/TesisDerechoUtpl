@@ -62,8 +62,10 @@ export class DirectorioService {
 
           if (term) {
             teachers = teachers.filter((teacher: any) => {
-              const firstName = `${teacher?.firstName || teacher?.nombre || ''}`.toLowerCase();
-              const lastName = `${teacher?.lastName || teacher?.apellido || ''}`.toLowerCase();
+              const firstName =
+                `${teacher?.firstName || teacher?.nombre || ''}`.toLowerCase();
+              const lastName =
+                `${teacher?.lastName || teacher?.apellido || ''}`.toLowerCase();
               const email = `${teacher?.email || ''}`.toLowerCase();
 
               return (
@@ -75,12 +77,14 @@ export class DirectorioService {
           }
 
           return teachers.sort((a: any, b: any) => {
-            const nameA = `${a?.firstName || a?.nombre || ''} ${a?.lastName || a?.apellido || ''}`
-              .trim()
-              .toLowerCase();
-            const nameB = `${b?.firstName || b?.nombre || ''} ${b?.lastName || b?.apellido || ''}`
-              .trim()
-              .toLowerCase();
+            const nameA =
+              `${a?.firstName || a?.nombre || ''} ${a?.lastName || a?.apellido || ''}`
+                .trim()
+                .toLowerCase();
+            const nameB =
+              `${b?.firstName || b?.nombre || ''} ${b?.lastName || b?.apellido || ''}`
+                .trim()
+                .toLowerCase();
 
             return nameA.localeCompare(nameB);
           });
@@ -159,8 +163,10 @@ export class DirectorioService {
               return enrichedCourses.filter((course) => {
                 const subjectName = `${course.subjectName || ''}`.toLowerCase();
                 const parallel = `${course.parallel || ''}`.toLowerCase();
-                const type = `${course.type || course.modality || ''}`.toLowerCase();
-                const professorName = `${course.professorName || ''}`.toLowerCase();
+                const type =
+                  `${course.type || course.modality || ''}`.toLowerCase();
+                const professorName =
+                  `${course.professorName || ''}`.toLowerCase();
                 const cycleName = `${course.cycleName || ''}`.toLowerCase();
 
                 return (
@@ -204,12 +210,16 @@ export class DirectorioService {
 
     const batch = this.afs.firestore.batch();
 
-    const authorizedRef = this.afs.collection('authorized').doc(normalizedEmail).ref;
+    const authorizedRef = this.afs
+      .collection('authorized')
+      .doc(normalizedEmail).ref;
     batch.set(authorizedRef, payload, { merge: true });
 
     const usersSnapshot = await this.afs
       .collection('users', (ref) =>
-        ref.where('email', '==', normalizedEmail).where('role', '==', 'docente'),
+        ref
+          .where('email', '==', normalizedEmail)
+          .where('role', '==', 'docente'),
       )
       .get()
       .toPromise();
@@ -246,10 +256,14 @@ export class DirectorioService {
     }
 
     const currentClass = classSnap.data() as any;
-    const nextSubjectName = `${updates.subjectName ?? currentClass.subjectName ?? ''}`.trim();
-    const nextParallel = `${updates.parallel ?? currentClass.parallel ?? ''}`.trim();
-    const nextType = `${updates.type ?? currentClass.type ?? currentClass.modality ?? ''}`.trim();
-    const nextProfessorId = `${updates.professorId ?? currentClass.professorId ?? ''}`.trim();
+    const nextSubjectName =
+      `${updates.subjectName ?? currentClass.subjectName ?? ''}`.trim();
+    const nextParallel =
+      `${updates.parallel ?? currentClass.parallel ?? ''}`.trim();
+    const nextType =
+      `${updates.type ?? currentClass.type ?? currentClass.modality ?? ''}`.trim();
+    const nextProfessorId =
+      `${updates.professorId ?? currentClass.professorId ?? ''}`.trim();
 
     const professor = nextProfessorId
       ? await firstValueFrom(this.getUserById(nextProfessorId))
@@ -262,7 +276,9 @@ export class DirectorioService {
     const professorEmail = professor?.email || '';
 
     const thesisSnapshot = await this.afs
-      .collection('tesis', (ref) => ref.where('classId', '==', normalizedCourseId))
+      .collection('tesis', (ref) =>
+        ref.where('classId', '==', normalizedCourseId),
+      )
       .get()
       .toPromise();
 

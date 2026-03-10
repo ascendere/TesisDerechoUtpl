@@ -2,7 +2,6 @@
 
 <div class="login-wrapper">
   <div class="login-container">
-
     <div class="body">
       <div class="top-actions">
         <button
@@ -15,39 +14,72 @@
         </button>
       </div>
       <h2>Crea tu cuenta</h2>
-      <p style="text-align: center; font-size: 14px; color: #666; margin-bottom: 20px;">
+      <p
+        style="
+          text-align: center;
+          font-size: 14px;
+          color: #666;
+          margin-bottom: 20px;
+        "
+      >
         Valida tu identidad con los datos institucionales.
       </p>
 
       <form class="login" (ngSubmit)="registrar()">
-        
         <div class="input-container">
           <label for="email">Correo institucional</label>
-          <input id="email" type="email" [(ngModel)]="email" placeholder="Correo electrónico" name="email" required>
+          <input
+            id="email"
+            type="email"
+            [(ngModel)]="email"
+            placeholder="Correo electrónico"
+            name="email"
+            required
+          />
         </div>
 
         <div class="input-container">
           <label for="cedula">Cédula de identidad</label>
-          <input id="cedula" type="text" [(ngModel)]="cedula" placeholder="Número de cédula" name="cedula" required>
+          <input
+            id="cedula"
+            type="text"
+            [(ngModel)]="cedula"
+            placeholder="Número de cédula"
+            name="cedula"
+            required
+          />
         </div>
 
         <div class="input-container">
           <label for="password">Contraseña nueva</label>
-          <input id="password" type="password" [(ngModel)]="password" placeholder="Contraseña" name="password" required>
+          <input
+            id="password"
+            type="password"
+            [(ngModel)]="password"
+            placeholder="Contraseña"
+            name="password"
+            required
+          />
         </div>
 
         <div class="input-container">
           <label for="confirmPassword">Confirmar contraseña</label>
-          <input id="confirmPassword" type="password" [(ngModel)]="confirmPassword" placeholder="Repite tu contraseña" name="confirmPassword" required>
+          <input
+            id="confirmPassword"
+            type="password"
+            [(ngModel)]="confirmPassword"
+            placeholder="Repite tu contraseña"
+            name="confirmPassword"
+            required
+          />
         </div>
 
         <button type="submit" class="login-button">Registrar</button>
       </form>
 
-      <p style="text-align: center; margin-top: 15px;">
+      <p style="text-align: center; margin-top: 15px">
         ¿Ya tienes cuenta? <a routerLink="/login">Inicia sesión</a>
       </p>
     </div>
-
   </div>
 </div>

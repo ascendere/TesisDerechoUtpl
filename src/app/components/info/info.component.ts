@@ -158,7 +158,11 @@ export class InfoComponent implements OnInit {
   }
 
   private isTesisFormComplete(): boolean {
-    if (!this.selectedCycleId || !this.selectedModality || !this.selectedClass) {
+    if (
+      !this.selectedCycleId ||
+      !this.selectedModality ||
+      !this.selectedClass
+    ) {
       return false;
     }
 
@@ -305,7 +309,8 @@ export class InfoComponent implements OnInit {
             this.datosTesis.numeroSentencia,
           ).trim();
           const asunto = `${this.datosTesis.asunto || ''}`.trim();
-          const tituloPosgrado = `${this.datosTesis.tituloPosgrado || ''}`.trim();
+          const tituloPosgrado =
+            `${this.datosTesis.tituloPosgrado || ''}`.trim();
 
           // OBJETO BASE
           let tesisData: any = {
