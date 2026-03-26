@@ -31,7 +31,7 @@ export class DocumentosComponent implements OnInit {
     private consultasService: ConsultasService,
     private loginService: LoginService,
     private route: ActivatedRoute,
-    private alertaService: AlertaService
+    private alertaService: AlertaService,
   ) {}
 
   ngOnInit() {
@@ -108,11 +108,11 @@ export class DocumentosComponent implements OnInit {
         },
         (error) => {
           console.error('Error al cargar los datos personales:', error);
-        }
+        },
       );
     } else {
       console.error(
-        'No se pudo cargar la información personal porque no se encontró el ID de la tesis.'
+        'No se pudo cargar la información personal porque no se encontró el ID de la tesis.',
       );
     }
   }
@@ -133,7 +133,7 @@ export class DocumentosComponent implements OnInit {
       this.alertaService.mostrarAlerta(
         'error',
         'Campos incompletos',
-        'Debes llenar todos los campos y subir un archivo antes de confirmar.'
+        'Debes llenar todos los campos y subir un archivo antes de confirmar.',
       );
       return;
     }
@@ -172,7 +172,7 @@ export class DocumentosComponent implements OnInit {
                   this.alertaService.mostrarAlerta(
                     'exito',
                     'Documento agregado',
-                    'El documento se ha agregado correctamente.'
+                    'El documento se ha agregado correctamente.',
                   );
                   this.isUploading = false;
                 })
@@ -183,7 +183,7 @@ export class DocumentosComponent implements OnInit {
                   this.alertaService.mostrarAlerta(
                     'error',
                     'Error al guardar',
-                    'Ocurrió un error al guardar el documento. Intenta nuevamente.'
+                    'Ocurrió un error al guardar el documento. Intenta nuevamente.',
                   );
                 });
             } else {
@@ -191,7 +191,7 @@ export class DocumentosComponent implements OnInit {
               this.alertaService.mostrarAlerta(
                 'error',
                 'Error al subir archivo',
-                'No se pudo subir el archivo. Intenta nuevamente.'
+                'No se pudo subir el archivo. Intenta nuevamente.',
               );
             }
           },
@@ -202,20 +202,20 @@ export class DocumentosComponent implements OnInit {
             this.alertaService.mostrarAlerta(
               'error',
               'Error al subir archivo',
-              'No se pudo subir el archivo. Verifica tu conexión.'
+              'No se pudo subir el archivo. Verifica tu conexión.',
             );
-          }
+          },
         );
     } else {
       this.isUploading = false;
       console.error(
-        'No se encontró el ID de la tesis para asociar el documento.'
+        'No se encontró el ID de la tesis para asociar el documento.',
       );
       // ❌ Alerta si falta el ID de tesis
       this.alertaService.mostrarAlerta(
         'error',
         'Error de referencia',
-        'No se encontró la tesis para asociar el documento.'
+        'No se encontró la tesis para asociar el documento.',
       );
     }
   }
@@ -285,7 +285,7 @@ export class DocumentosComponent implements OnInit {
       this.alertaService.mostrarAlerta(
         'info',
         'Sin documentos',
-        'Aún no hay documentos ingresados para validar.'
+        'Aún no hay documentos ingresados para validar.',
       );
       return;
     }
@@ -306,7 +306,7 @@ export class DocumentosComponent implements OnInit {
       this.alertaService.mostrarAlerta(
         'error',
         'Validación requerida',
-        'Todos los documentos deben tener un estado.'
+        'Todos los documentos deben tener un estado.',
       );
       return;
     }
@@ -319,7 +319,7 @@ export class DocumentosComponent implements OnInit {
       this.alertaService.mostrarAlerta(
         'error',
         'Fecha de validación faltante',
-        'Debe seleccionar una fecha de validación para todos los documentos.'
+        'Debe seleccionar una fecha de validación para todos los documentos.',
       );
       return;
     }
@@ -330,7 +330,7 @@ export class DocumentosComponent implements OnInit {
         this.alertaService.mostrarAlerta(
           'exito',
           'Actualización exitosa',
-          'Estados actualizados correctamente.'
+          'Estados actualizados correctamente.',
         );
         this.loadDocuments(); // Recargar documentos
       })
@@ -338,7 +338,7 @@ export class DocumentosComponent implements OnInit {
         this.alertaService.mostrarAlerta(
           'error',
           'Error de actualización',
-          'No se pudieron actualizar los estados de los documentos.'
+          'No se pudieron actualizar los estados de los documentos.',
         );
       });
   }

@@ -188,16 +188,16 @@ export class AdminDataComponent implements OnInit {
         ) || null;
     }
 
-    const evaluadorId = `${this.tesisDataCache.evaluationTeam?.[0]?.id || ''}`.trim();
-    const evaluadorEmail =
-      `${
-        this.tesisDataCache.evaluatorEmail ||
-        this.tesisDataCache.evaluationTeam?.[0]?.email ||
-        this.recuadros.equipoEvaluador.correo ||
-        ''
-      }`
-        .trim()
-        .toLowerCase();
+    const evaluadorId =
+      `${this.tesisDataCache.evaluationTeam?.[0]?.id || ''}`.trim();
+    const evaluadorEmail = `${
+      this.tesisDataCache.evaluatorEmail ||
+      this.tesisDataCache.evaluationTeam?.[0]?.email ||
+      this.recuadros.equipoEvaluador.correo ||
+      ''
+    }`
+      .trim()
+      .toLowerCase();
     if (evaluadorId && this.evaluatorsList.length > 0) {
       this.selectedEvaluator =
         this.evaluatorsList.find((prof) => prof.id === evaluadorId) || null;

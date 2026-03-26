@@ -5,7 +5,6 @@
 
 <h2>Ingreso y validación de documentación</h2>
 
-
 <table>
   <thead>
     <tr>
@@ -25,37 +24,71 @@
       <td>{{ doc.descripcion }}</td>
       <td>{{ doc.fechaIngreso }}</td>
       <td>
-        <span *ngIf="role !== 'director'">{{ doc.fechaValidacion || '-' }}</span>
-        <input *ngIf="role === 'director'" type="date" [(ngModel)]="doc.fechaValidacionActual">
+        <span *ngIf="role !== 'director'">{{
+          doc.fechaValidacion || "-"
+        }}</span>
+        <input
+          *ngIf="role === 'director'"
+          type="date"
+          [(ngModel)]="doc.fechaValidacionActual"
+        />
       </td>
       <td>
-        <span *ngIf="role !== 'director'">{{ doc.observaciones || 'Ninguna' }}</span>
-        <input *ngIf="role === 'director'" type="text" [(ngModel)]="doc.observacionesActual"
-          placeholder="Agregar observación">
+        <span *ngIf="role !== 'director'">{{
+          doc.observaciones || "Ninguna"
+        }}</span>
+        <input
+          *ngIf="role === 'director'"
+          type="text"
+          [(ngModel)]="doc.observacionesActual"
+          placeholder="Agregar observación"
+        />
       </td>
       <td>
-        <span *ngIf="role !== 'docente'" [ngClass]="getStatusClass(doc.docente)">{{ doc.docente }}</span>
-        <select *ngIf="role === 'docente'" [(ngModel)]="doc.estadoActual" [ngClass]="getStatusClass(doc.estadoActual)">
+        <span
+          *ngIf="role !== 'docente'"
+          [ngClass]="getStatusClass(doc.docente)"
+          >{{ doc.docente }}</span
+        >
+        <select
+          *ngIf="role === 'docente'"
+          [(ngModel)]="doc.estadoActual"
+          [ngClass]="getStatusClass(doc.estadoActual)"
+        >
           <option value="Aprobado">Aprobado</option>
           <option value="Rechazado">Rechazado</option>
         </select>
       </td>
       <td>
-        <span *ngIf="role !== 'director'" [ngClass]="getStatusClass(doc.director)">{{ doc.director }}</span>
-        <select *ngIf="role === 'director'" [(ngModel)]="doc.estadoActual" [ngClass]="getStatusClass(doc.estadoActual)">
+        <span
+          *ngIf="role !== 'director'"
+          [ngClass]="getStatusClass(doc.director)"
+          >{{ doc.director }}</span
+        >
+        <select
+          *ngIf="role === 'director'"
+          [(ngModel)]="doc.estadoActual"
+          [ngClass]="getStatusClass(doc.estadoActual)"
+        >
           <option value="Aprobado">Aprobado</option>
           <option value="Rechazado">Rechazado</option>
         </select>
       </td>
       <td>
-        <span *ngIf="role !== 'secretario'" [ngClass]="getStatusClass(doc.secretario)">{{ doc.secretario }}</span>
-        <select *ngIf="role === 'secretario'" [(ngModel)]="doc.estadoActual"
-          [ngClass]="getStatusClass(doc.estadoActual)">
+        <span
+          *ngIf="role !== 'secretario'"
+          [ngClass]="getStatusClass(doc.secretario)"
+          >{{ doc.secretario }}</span
+        >
+        <select
+          *ngIf="role === 'secretario'"
+          [(ngModel)]="doc.estadoActual"
+          [ngClass]="getStatusClass(doc.estadoActual)"
+        >
           <option value="Aprobado">Aprobado</option>
           <option value="Rechazado">Rechazado</option>
         </select>
       </td>
-
     </tr>
 
     <tr *ngIf="addingDocument">
@@ -63,10 +96,16 @@
         <input id="archivo" type="file" (change)="onFileSelected($event)" />
         <label for="archivo" class="custom-file-upload">
           <img src="assets/img/upload-icon.svg" alt="Upload Icon" />
-          {{ archivoCargado ? 'Archivo cargado' : 'Adjunta tu documento aquí' }}
+          {{ archivoCargado ? "Archivo cargado" : "Adjunta tu documento aquí" }}
         </label>
       </td>
-      <td><input placeholder="Descripción" type="text" [(ngModel)]="newDocument.descripcion" /></td>
+      <td>
+        <input
+          placeholder="Descripción"
+          type="text"
+          [(ngModel)]="newDocument.descripcion"
+        />
+      </td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -80,20 +119,24 @@
 <div class="btns" *ngIf="role == 'estudiante'">
   <button *ngIf="!addingDocument" (click)="addDocument()">Agregar +</button>
 
-
-  <button [disabled]="isUploading" *ngIf="addingDocument" (click)="confirmDocument()">{{isUploading ? 'Cargando...' :
-    'Guardar'}}</button>
+  <button
+    [disabled]="isUploading"
+    *ngIf="addingDocument"
+    (click)="confirmDocument()"
+  >
+    {{ isUploading ? "Cargando..." : "Guardar" }}
+  </button>
 
   <button *ngIf="!addingDocument" (click)="printDocument()">Imprimir</button>
 </div>
 
 <div class="btns" *ngIf="role !== 'estudiante'">
-  <button *ngIf="documents.length > 0" (click)="updateDocumentStates()">Guardar Cambios</button>
+  <button *ngIf="documents.length > 0" (click)="updateDocumentStates()">
+    Guardar Cambios
+  </button>
   <p class="empty-docs-message" *ngIf="documents.length === 0">
     Aún no hay ningún documento ingresado para validar.
   </p>
 </div>
-
-
 
 <app-footer2></app-footer2>

@@ -16,7 +16,10 @@
       Reunión +
     </button>
 
-    <button *ngIf="puedeGestionarEvidenciasYReuniones()" (click)="openAddDialog()">
+    <button
+      *ngIf="puedeGestionarEvidenciasYReuniones()"
+      (click)="openAddDialog()"
+    >
       Agregar Evidencias +
     </button>
 
