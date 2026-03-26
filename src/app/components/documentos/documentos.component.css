@@ -108,6 +108,13 @@ tfoot button {
   justify-content: center;
 }
 
+.empty-docs-message {
+  margin: 10px 0;
+  color: #5d6d7e;
+  font-size: 14px;
+  text-align: center;
+}
+
 input, select{
   padding: 10px;
   border-radius: 8px;

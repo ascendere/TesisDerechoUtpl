@@ -215,7 +215,8 @@
   cursor: pointer;
 }
 
-.btn-dark:hover {
+.btn-dark:hover,
+.btn-edit:hover {
   background: #00365d;
 }
 
@@ -368,10 +369,6 @@
   cursor: pointer;
 }
 
-.btn-edit:hover {
-  background: #00365d;
-}
-
 .btn-edit-icon {
   width: 34px;
   height: 34px;
@@ -491,13 +488,15 @@
   border: 1px solid #d8e0e8;
 }
 
-.teacher-modal .modal-header {
+.teacher-modal .modal-header,
+.course-modal .modal-header {
   background: #f8fbff;
   border-bottom: 1px solid #e4ecf4;
   padding: 18px 24px;
 }
 
-.teacher-modal .modal-header h3 {
+.teacher-modal .modal-header h3,
+.course-modal .modal-header h3 {
   color: #044170;
   font-size: 1.25rem;
 }
@@ -557,17 +556,6 @@
 .course-modal {
   max-width: 620px;
   border: 1px solid #d8e0e8;
-}
-
-.course-modal .modal-header {
-  background: #f8fbff;
-  border-bottom: 1px solid #e4ecf4;
-  padding: 18px 24px;
-}
-
-.course-modal .modal-header h3 {
-  color: #044170;
-  font-size: 1.25rem;
 }
 
 .course-modal-body {
@@ -682,7 +670,8 @@
   margin-top: 10px;
 }
 
-.save-btn:hover {
+.save-btn:hover,
+.btn-save-inline:hover {
   background: #002d50;
 }
 
@@ -774,10 +763,6 @@
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
-}
-
-.btn-save-inline:hover {
-  background: #002d50;
 }
 
 .alert {

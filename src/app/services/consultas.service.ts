@@ -714,6 +714,9 @@ export class ConsultasService {
       };
     } else {
       updateData = {
+        evaluatorId: professor.id,
+        evaluatorName: fullName,
+        evaluatorEmail: professor.email,
         evaluationTeam: [
           {
             id: professor.id,

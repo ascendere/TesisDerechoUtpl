@@ -8,11 +8,8 @@
   <nav class="nav-bar" [class.active]="menuOpen">
     <a routerLink="/home">Inicio</a>
     <a routerLink="/info">Objetivo</a>
-    <a *ngIf="user?.role === 'secretario'" routerLink="/directorio"
-      >Directorio</a
-    >
     <a *ngIf="user?.role === 'secretario'" routerLink="/directorio-autorizados"
-      >Autorizados</a
+      >Directorio</a
     >
     <a href="https://www.utpl.edu.ec/carreras/derecho" target="_blank"
       >Carrera Derecho</a

@@ -10,16 +10,15 @@
   <!-- Botón para agregar nueva evidencia -->
   <div class="botones-flujo">
     <button
-      *ngIf="
-        usuarioLoggeado?.role === 'director' ||
-        usuarioLoggeado?.role === 'estudiante'
-      "
+      *ngIf="puedeGestionarEvidenciasYReuniones()"
       (click)="openReunionDialog()"
     >
       Reunión +
     </button>
 
-    <button (click)="openAddDialog()">Agregar Evidencias +</button>
+    <button *ngIf="puedeGestionarEvidenciasYReuniones()" (click)="openAddDialog()">
+      Agregar Evidencias +
+    </button>
 
     <!-- Botón para visualizar rúbrica cuando el porcentaje del director sea 100 -->
     <div *ngIf="ultimoPorcentajeDirector === 100" class="rubrica-container">
@@ -154,13 +153,14 @@
                 [(ngModel)]="form.porcentaje"
                 name="porcentaje"
                 class="porcentaje-input"
-                [min]="
-                  !usuarioLoggeado || usuarioLoggeado.role === 'estudiante'
-                    ? ultimoPorcentajeEstudiante + 1
-                    : ultimoPorcentajeDirector + 1
-                "
+                inputmode="numeric"
+                [min]="obtenerMinimoPorcentaje()"
                 max="100"
                 step="1"
+                [readonly]="!puedeEditarPorcentaje()"
+                (keydown)="onPorcentajeKeydown($event)"
+                (input)="onPorcentajeInput($event)"
+                required
               />
             </div>
           </div>

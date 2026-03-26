@@ -281,6 +281,15 @@ export class DocumentosComponent implements OnInit {
   }
 
   updateDocumentStates() {
+    if (!this.documents || this.documents.length === 0) {
+      this.alertaService.mostrarAlerta(
+        'info',
+        'Sin documentos',
+        'Aún no hay documentos ingresados para validar.'
+      );
+      return;
+    }
+
     const documentosActualizados = this.documents.map((doc) => ({
       id: doc.id,
       [`${this.role}`]: doc.estadoActual, // Guardar estado según el rol

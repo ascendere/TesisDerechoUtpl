@@ -33,6 +33,13 @@ export class FlujoComponent implements OnInit {
 
   isUploading: boolean = false;
 
+  puedeGestionarEvidenciasYReuniones(): boolean {
+    return (
+      this.usuarioLoggeado?.role === 'director' ||
+      this.usuarioLoggeado?.role === 'estudiante'
+    );
+  }
+
   // Tipos de evidencia disponibles
   tiposEvidencia: string[] = [
     'Preliminares',
@@ -151,6 +158,15 @@ export class FlujoComponent implements OnInit {
 
   // Abre el modal para agregar nueva evidencia
   openAddDialog() {
+    if (!this.puedeGestionarEvidenciasYReuniones()) {
+      this.alertaService.mostrarAlerta(
+        'error',
+        'Permiso denegado',
+        'Solo estudiantes y directores pueden agregar evidencias.',
+      );
+      return;
+    }
+
     if (!this.activeCycleId) {
       this.alertaService.mostrarAlerta(
         'error',
@@ -162,6 +178,73 @@ export class FlujoComponent implements OnInit {
 
     this.mostrarDialogoAgregar = true;
     this.form.fechaRegistro = new Date().toISOString().split('T')[0]; // Asigna la fecha actual en formato YYYY-MM-DD
+    this.form.porcentaje = this.obtenerMinimoPorcentaje();
+  }
+
+  obtenerUltimoPorcentajeRolActual(): number {
+    if (!this.usuarioLoggeado) {
+      return 0;
+    }
+
+    return this.usuarioLoggeado.role === 'director'
+      ? this.ultimoPorcentajeDirector
+      : this.ultimoPorcentajeEstudiante;
+  }
+
+  obtenerMinimoPorcentaje(): number {
+    const ultimoPorcentaje = this.obtenerUltimoPorcentajeRolActual();
+    return ultimoPorcentaje >= 100 ? 100 : ultimoPorcentaje + 1;
+  }
+
+  puedeEditarPorcentaje(): boolean {
+    return this.obtenerUltimoPorcentajeRolActual() < 100;
+  }
+
+  onPorcentajeKeydown(event: KeyboardEvent): void {
+    if (!this.puedeEditarPorcentaje()) {
+      return;
+    }
+
+    const teclasPermitidas = [
+      'Backspace',
+      'Delete',
+      'Tab',
+      'ArrowLeft',
+      'ArrowRight',
+      'Home',
+      'End',
+    ];
+
+    if (teclasPermitidas.includes(event.key)) {
+      return;
+    }
+
+    if ((event.ctrlKey || event.metaKey) && ['a', 'c', 'v', 'x'].includes(event.key.toLowerCase())) {
+      return;
+    }
+
+    if (!/^\d$/.test(event.key)) {
+      event.preventDefault();
+    }
+  }
+
+  onPorcentajeInput(event: Event): void {
+    if (!this.puedeEditarPorcentaje()) {
+      this.form.porcentaje = 100;
+      return;
+    }
+
+    const input = event.target as HTMLInputElement;
+    const soloDigitos = `${input.value || ''}`.replace(/\D/g, '');
+
+    if (!soloDigitos) {
+      this.form.porcentaje = null;
+      return;
+    }
+
+    const valor = Math.min(100, Number(soloDigitos));
+    this.form.porcentaje = Number.isNaN(valor) ? null : valor;
+    input.value = this.form.porcentaje == null ? '' : `${this.form.porcentaje}`;
   }
 
   // Descargar la matriz de categorías
@@ -193,6 +276,15 @@ export class FlujoComponent implements OnInit {
   // Método para enviar el formulario de agregar nueva evidencia
   submit() {
     if (this.isUploading) return; // Evita múltiples envíos simultáneos
+
+    if (!this.puedeGestionarEvidenciasYReuniones()) {
+      this.alertaService.mostrarAlerta(
+        'error',
+        'Permiso denegado',
+        'Solo estudiantes y directores pueden crear evidencias.',
+      );
+      return;
+    }
 
     if (!this.activeCycleId) {
       this.alertaService.mostrarAlerta(
@@ -229,10 +321,45 @@ export class FlujoComponent implements OnInit {
 
     const esEstudiante = this.usuarioLoggeado.role === 'estudiante';
     const esDirector = this.usuarioLoggeado.role === 'director';
+    const porcentajeIngresado = Number(this.form.porcentaje);
+    const ultimoPorcentajeActual = esDirector
+      ? this.ultimoPorcentajeDirector
+      : this.ultimoPorcentajeEstudiante;
+
+    if (Number.isNaN(porcentajeIngresado)) {
+      this.isUploading = false;
+      this.alertaService.mostrarAlerta(
+        'error',
+        'Porcentaje inválido',
+        'Ingresa un porcentaje válido para continuar.',
+      );
+      return;
+    }
+
+    if (porcentajeIngresado > 100) {
+      this.isUploading = false;
+      this.alertaService.mostrarAlerta(
+        'error',
+        'Porcentaje inválido',
+        'El porcentaje no puede ser mayor a 100%.',
+      );
+      return;
+    }
+
+    if (ultimoPorcentajeActual >= 100 && porcentajeIngresado !== 100) {
+      this.isUploading = false;
+      this.alertaService.mostrarAlerta(
+        'error',
+        'Porcentaje bloqueado',
+        'Cuando el avance ya llegó a 100%, las nuevas evidencias deben registrarse con 100%.',
+      );
+      return;
+    }
 
     if (
       esEstudiante &&
-      this.form.porcentaje <= this.ultimoPorcentajeEstudiante
+      this.ultimoPorcentajeEstudiante < 100 &&
+      porcentajeIngresado <= this.ultimoPorcentajeEstudiante
     ) {
       this.isUploading = false;
       this.alertaService.mostrarAlerta(
@@ -243,7 +370,11 @@ export class FlujoComponent implements OnInit {
       return;
     }
 
-    if (esDirector && this.form.porcentaje <= this.ultimoPorcentajeDirector) {
+    if (
+      esDirector &&
+      this.ultimoPorcentajeDirector < 100 &&
+      porcentajeIngresado <= this.ultimoPorcentajeDirector
+    ) {
       this.isUploading = false;
       this.alertaService.mostrarAlerta(
         'error',
@@ -268,7 +399,7 @@ export class FlujoComponent implements OnInit {
               subcategoria: this.form.subcategoria,
               fechaRegistro: new Date().toISOString(),
               evidenciaUrl: downloadUrl,
-              porcentaje: this.form.porcentaje,
+              porcentaje: porcentajeIngresado,
               usuarioNombre: this.usuarioLoggeado?.firstName,
               usuarioApellido: this.usuarioLoggeado?.lastName,
               usuarioId: this.usuarioLoggeado?.id,
@@ -282,7 +413,7 @@ export class FlujoComponent implements OnInit {
               .add(nuevaEvidencia)
               .then(() => {
                 if (esDirector) {
-                  if (this.form.porcentaje >= 100) {
+                  if (porcentajeIngresado >= 100) {
                     this.firestore
                       .collection('tesis')
                       .doc(this.tesisId!)
@@ -291,7 +422,7 @@ export class FlujoComponent implements OnInit {
                   return this.firestore
                     .collection('tesis')
                     .doc(this.tesisId!)
-                    .update({ progress: this.form.porcentaje });
+                    .update({ progress: porcentajeIngresado });
                 }
                 return Promise.resolve();
               })
@@ -340,6 +471,15 @@ export class FlujoComponent implements OnInit {
 
   // Abrir el modal de reuniones y asignar la fecha de registro actual
   openReunionDialog() {
+    if (!this.puedeGestionarEvidenciasYReuniones()) {
+      this.alertaService.mostrarAlerta(
+        'error',
+        'Permiso denegado',
+        'Solo estudiantes y directores pueden registrar reuniones.',
+      );
+      return;
+    }
+
     if (!this.activeCycleId) {
       this.alertaService.mostrarAlerta(
         'error',
@@ -420,6 +560,15 @@ export class FlujoComponent implements OnInit {
   // Método para enviar el formulario de reunión
   submitReunion() {
     if (this.isUploading) return; // Evita múltiples envíos simultáneos
+
+    if (!this.puedeGestionarEvidenciasYReuniones()) {
+      this.alertaService.mostrarAlerta(
+        'error',
+        'Permiso denegado',
+        'Solo estudiantes y directores pueden registrar reuniones.',
+      );
+      return;
+    }
 
     if (!this.activeCycleId) {
       this.alertaService.mostrarAlerta(

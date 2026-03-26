@@ -43,6 +43,18 @@ export class AdminDataComponent implements OnInit {
   selectedEvaluator: any = null;
   directorsList: any[] = [];
   evaluatorsList: any[] = [];
+  private tesisDataCache: any = null;
+
+  compareUsers = (a: any, b: any): boolean => {
+    if (!a || !b) return a === b;
+    const idA = `${a.id || ''}`.trim();
+    const idB = `${b.id || ''}`.trim();
+    if (idA && idB) return idA === idB;
+
+    const emailA = `${a.email || ''}`.trim().toLowerCase();
+    const emailB = `${b.email || ''}`.trim().toLowerCase();
+    return !!emailA && emailA === emailB;
+  };
 
   constructor(
     private consultasService: ConsultasService,
@@ -60,11 +72,13 @@ export class AdminDataComponent implements OnInit {
     this.loadAllProfessors();
     this.consultasService.getUserByRole('director').subscribe((list) => {
       this.directorsList = list;
+      this.syncSelectedAssignments();
     });
 
     // Cargar evaluadores
     this.consultasService.getUserByRole('evaluador').subscribe((list) => {
       this.evaluatorsList = list;
+      this.syncSelectedAssignments();
     });
     this.route.queryParams.subscribe((params) => {
       this.tesisId = params['tesisId'];
@@ -107,6 +121,20 @@ export class AdminDataComponent implements OnInit {
           'Asignación Actualizada',
           `Se ha asignado a ${selectedProfessor.firstName} correctamente.`,
         );
+
+        if (role === 'director') {
+          this.directorName = `${selectedProfessor.firstName} ${selectedProfessor.lastName}`;
+          this.recuadros.director.correo = selectedProfessor.email || '';
+          this.director = selectedProfessor;
+          if (this.tesisDataCache) {
+            this.tesisDataCache.directorId = selectedProfessor.id;
+          }
+        } else {
+          this.recuadros.equipoEvaluador.correo = selectedProfessor.email || '';
+          if (this.tesisDataCache) {
+            this.tesisDataCache.evaluationTeam = [{ id: selectedProfessor.id }];
+          }
+        }
       } catch (error) {
         this.alertaService.mostrarAlerta(
           'error',
@@ -124,31 +152,62 @@ export class AdminDataComponent implements OnInit {
       .valueChanges()
       .subscribe((data: any) => {
         if (data) {
+          this.tesisDataCache = data;
           console.log('Datos de tesis obtenidos:', data);
           this.recuadros.director.correo = data.directorEmail || '';
+          this.director = { email: data.directorEmail || '' };
           this.directorName = data.directorName || 'Nombre no disponible';
           this.recuadros.docente.correo = data.professorEmail || '';
-          this.recuadros.equipoEvaluador.correo = data.evaluatorEmail || '';
+          this.recuadros.equipoEvaluador.correo =
+            data.evaluatorEmail || data.evaluationTeam?.[0]?.email || '';
           this.recuadros.aprobacionDirector.fechaEnvio =
             data.rubrica.fechaActualizacion;
-          if (data.directorId && this.directorsList.length > 0) {
-            this.selectedDirector = this.directorsList.find(
-              (prof) => prof.id === data.directorId,
-            );
-          }
-
-          // 2. Sincronizar Evaluador: Buscamos en la lista el que coincida con el ID del primer evaluador
-          if (
-            data.evaluationTeam?.length > 0 &&
-            this.evaluatorsList.length > 0
-          ) {
-            const evaluadorId = data.evaluationTeam[0].id;
-            this.selectedEvaluator = this.evaluatorsList.find(
-              (prof) => prof.id === evaluadorId,
-            );
-          }
+          this.syncSelectedAssignments();
         }
       });
+  }
+
+  private syncSelectedAssignments() {
+    if (!this.tesisDataCache) {
+      return;
+    }
+
+    const directorId = `${this.tesisDataCache.directorId || ''}`.trim();
+    const directorEmail =
+      `${this.tesisDataCache.directorEmail || this.recuadros.director.correo || ''}`
+        .trim()
+        .toLowerCase();
+    if (directorId && this.directorsList.length > 0) {
+      this.selectedDirector =
+        this.directorsList.find((prof) => prof.id === directorId) || null;
+    } else if (directorEmail && this.directorsList.length > 0) {
+      this.selectedDirector =
+        this.directorsList.find(
+          (prof) =>
+            `${prof.email || ''}`.trim().toLowerCase() === directorEmail,
+        ) || null;
+    }
+
+    const evaluadorId = `${this.tesisDataCache.evaluationTeam?.[0]?.id || ''}`.trim();
+    const evaluadorEmail =
+      `${
+        this.tesisDataCache.evaluatorEmail ||
+        this.tesisDataCache.evaluationTeam?.[0]?.email ||
+        this.recuadros.equipoEvaluador.correo ||
+        ''
+      }`
+        .trim()
+        .toLowerCase();
+    if (evaluadorId && this.evaluatorsList.length > 0) {
+      this.selectedEvaluator =
+        this.evaluatorsList.find((prof) => prof.id === evaluadorId) || null;
+    } else if (evaluadorEmail && this.evaluatorsList.length > 0) {
+      this.selectedEvaluator =
+        this.evaluatorsList.find(
+          (prof) =>
+            `${prof.email || ''}`.trim().toLowerCase() === evaluadorEmail,
+        ) || null;
+    }
   }
 
   onFileSelected(event: any, recuadro: any) {
@@ -180,8 +239,20 @@ export class AdminDataComponent implements OnInit {
   sendToDirector() {
     if (this.selectedDateTime) {
       const message = `El grado se realizará el ${this.selectedDateTime}.`;
+      const directorEmail =
+        this.selectedDirector?.email || this.recuadros.director.correo || '';
+
+      if (!directorEmail) {
+        this.alertaService.mostrarAlerta(
+          'error',
+          'Correo no disponible',
+          'No existe un correo de director para enviar la notificación.',
+        );
+        return;
+      }
+
       this.emailService
-        .sendEmail(this.director.email, message)
+        .sendEmail(directorEmail, message)
         .then(() => {
           this.fechaEnvioDirector = this.currentDate;
           alert('Correo enviado al director con éxito.');

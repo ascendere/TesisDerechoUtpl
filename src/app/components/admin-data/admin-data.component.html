@@ -16,12 +16,13 @@
           : currentDate
       }}
     </p>
-    <input
-      [disabled]="!esSecretario"
-      type="email"
-      [(ngModel)]="recuadros.docente.correo"
-      placeholder="Correo del docente"
-    />
+    <p>
+      {{
+        recuadros.docente.correo
+          ? recuadros.docente.correo
+          : "Sin correo asignado"
+      }}
+    </p>
     <label *ngIf="esSecretario" for="archivoDocente" class="custom-file-upload">
       <img src="assets/img/upload-icon.svg" alt="Upload Icon" />
       Adjunta tu documento aquí
@@ -81,8 +82,12 @@
     <select
       *ngIf="esSecretario"
       [(ngModel)]="selectedDirector"
+      [compareWith]="compareUsers"
       (change)="onManualAssignmentChange('director')"
     >
+      <option [ngValue]="null" disabled>
+        {{ recuadros.director.correo || "Selecciona correo del director" }}
+      </option>
       <option *ngFor="let prof of directorsList" [ngValue]="prof">
         {{ prof.email }}
       </option>
@@ -149,17 +154,23 @@
           : currentDate
       }}
     </p>
-    <p>{{ recuadros.equipoEvaluador.correo }}</p>
+    <p *ngIf="!esSecretario">{{ recuadros.equipoEvaluador.correo }}</p>
     <select
       *ngIf="esSecretario"
       [(ngModel)]="selectedEvaluator"
+      [compareWith]="compareUsers"
       (change)="onManualAssignmentChange('evaluador')"
     >
+      <option [ngValue]="null" disabled>
+        {{
+          recuadros.equipoEvaluador.correo ||
+            "Selecciona correo del equipo evaluador"
+        }}
+      </option>
       <option *ngFor="let prof of evaluatorsList" [ngValue]="prof">
         {{ prof.email }}
       </option>
     </select>
-    <p *ngIf="!esSecretario">{{ selectedEvaluator?.email }}</p>
     <label
       *ngIf="esSecretario"
       for="archivoNotificacionEvaluador"
@@ -410,7 +421,7 @@
     <input
       type="datetime-local"
       [(ngModel)]="selectedDateTime"
-      disabled="!esSecretario"
+      [disabled]="!esSecretario"
     />
     <button
       *ngIf="esSecretario && !fechaEnvioDirector"

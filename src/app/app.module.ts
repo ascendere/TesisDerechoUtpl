@@ -52,11 +52,6 @@ const appRoutes: Routes = [
   { path: 'flujo', component: FlujoComponent, canActivate: [AuthGuard] },
   { path: 'rubrica', component: RubricaComponent, canActivate: [AuthGuard] },
   {
-    path: 'directorio',
-    component: DirectorioComponent,
-    canActivate: [AuthGuard],
-  },
-  {
     path: 'directorio-autorizados',
     component: DirectorioAutorizadosComponent,
     canActivate: [AuthGuard],
