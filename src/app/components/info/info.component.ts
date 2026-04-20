@@ -32,6 +32,12 @@ export class InfoComponent implements OnInit {
 
   tesisList: any[] = []; // Lista completa de tesis
   filteredTesis: any[] = []; // Lista filtrada según el buscador
+  selectedTesisIds = new Set<string>();
+  isDeactivatingTesis = false;
+  pageSize: number = 10;
+  pageSizeOptions: number[] = [5, 10, 20];
+  activePage: number = 1;
+  pendingPage: number = 1;
   searchTerm: string = '';
   classMap: Map<string, any> = new Map(); // Mapa para asignaturas y paralelos
 
@@ -119,6 +125,7 @@ export class InfoComponent implements OnInit {
       next: (tesis) => {
         this.tesisList = tesis; //
         this.filteredTesis = tesis; // Actualiza la vista filtrada
+        this.syncSelectedTesisIds();
         console.log('Tesis del estudiante cargadas:', tesis);
       },
       error: (err) => {
@@ -305,6 +312,7 @@ export class InfoComponent implements OnInit {
           const cicloSeleccionado = this.cycles.find(
             (c) => c.id === this.selectedCycleId,
           );
+          const requiresManualAssignment = !isFirst || user?.isPPL === true;
           const numeroSentencia = this.sanitizeNumeroSentencia(
             this.datosTesis.numeroSentencia,
           ).trim();
@@ -316,6 +324,7 @@ export class InfoComponent implements OnInit {
           let tesisData: any = {
             studentName: `${user.firstName} ${user.lastName}`,
             userId: user.id,
+            isPPL: user?.isPPL === true,
             className: classData.subjectName,
             classParallel: classData.parallel,
             classId: classData.id,
@@ -323,7 +332,9 @@ export class InfoComponent implements OnInit {
             professorId: classData.professorId,
             professorName: classData.professorName,
             professorEmail: classData.professorEmail,
-            status: isFirst ? 'Faltante' : 'Pendiente de Aprobar',
+            status: requiresManualAssignment
+              ? 'Pendiente de Aprobar'
+              : 'Faltante',
             progress: 0,
             ciclo: cicloSeleccionado ? cicloSeleccionado.name : '',
             tipo: this.tipoTesis, // 'pregrado' o 'posgrado'
@@ -338,7 +349,7 @@ export class InfoComponent implements OnInit {
             tesisData.tituloTesis = tituloPosgrado;
           }
 
-          if (isFirst) {
+          if (!requiresManualAssignment) {
             return from(
               this.consultasService.saveTesisWithRandomAssignment(tesisData),
             );
@@ -371,6 +382,10 @@ export class InfoComponent implements OnInit {
     this.consultasService.getAllTesis().subscribe((tesis) => {
       this.tesisList = tesis;
       this.filteredTesis = tesis; // Inicialmente, muestra todas las tesis
+      this.activePage = 1;
+      this.pendingPage = 1;
+      this.clampPages();
+      this.syncSelectedTesisIds();
     });
   }
 
@@ -379,8 +394,180 @@ export class InfoComponent implements OnInit {
     this.filteredTesis = this.tesisList.filter(
       (tesis) =>
         tesis.studentName.toLowerCase().includes(searchTermLower) ||
-        tesis.userId.toLowerCase().includes(searchTermLower),
+        tesis.userId.toLowerCase().includes(searchTermLower) ||
+        `${tesis.thesisCode || ''}`.toLowerCase().includes(searchTermLower),
     );
+    this.activePage = 1;
+    this.pendingPage = 1;
+    this.clampPages();
+    this.syncSelectedTesisIds();
+  }
+
+  onPageSizeChange(value: string): void {
+    const parsed = Number(value);
+    this.pageSize = Number.isFinite(parsed) && parsed > 0 ? parsed : 10;
+    this.activePage = 1;
+    this.pendingPage = 1;
+    this.clampPages();
+    this.syncSelectedTesisIds();
+  }
+
+  goToActivePage(page: number): void {
+    this.activePage = this.normalizePage(page, this.totalActivePages);
+  }
+
+  goToPendingPage(page: number): void {
+    this.pendingPage = this.normalizePage(page, this.totalPendingPages);
+  }
+
+  get selectedTesisCount(): number {
+    return this.selectedTesisIds.size;
+  }
+
+  get hasSelectedTesis(): boolean {
+    return this.selectedTesisCount > 0;
+  }
+
+  private getTesisId(tesis: any): string {
+    return `${tesis?.id || ''}`.trim();
+  }
+
+  private syncSelectedTesisIds(): void {
+    if (!this.selectedTesisIds.size) {
+      return;
+    }
+
+    const visibleIds = new Set(
+      this.tesisActivas.map((tesis) => this.getTesisId(tesis)).filter(Boolean),
+    );
+
+    Array.from(this.selectedTesisIds).forEach((id) => {
+      if (!visibleIds.has(id)) {
+        this.selectedTesisIds.delete(id);
+      }
+    });
+  }
+
+  allVisibleTesisSelected(): boolean {
+    if (!this.paginatedTesisActivas.length) {
+      return false;
+    }
+
+    return this.paginatedTesisActivas.every((tesis) =>
+      this.selectedTesisIds.has(this.getTesisId(tesis)),
+    );
+  }
+
+  toggleSelectTesis(tesis: any, checked: boolean): void {
+    const tesisId = this.getTesisId(tesis);
+
+    if (!tesisId) {
+      return;
+    }
+
+    if (checked) {
+      this.selectedTesisIds.add(tesisId);
+      return;
+    }
+
+    this.selectedTesisIds.delete(tesisId);
+  }
+
+  toggleSelectAllVisibleTesis(checked: boolean): void {
+    this.paginatedTesisActivas.forEach((tesis) => {
+      const tesisId = this.getTesisId(tesis);
+      if (!tesisId) {
+        return;
+      }
+
+      if (checked) {
+        this.selectedTesisIds.add(tesisId);
+      } else {
+        this.selectedTesisIds.delete(tesisId);
+      }
+    });
+  }
+
+  async deactivateTesis(tesis: any): Promise<void> {
+    if (this.userRole !== 'secretario') {
+      return;
+    }
+
+    const tesisId = this.getTesisId(tesis);
+
+    if (!tesisId) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Se desactivará la tesis ${tesis?.thesisCode || tesisId}. ¿Deseas continuar?`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    this.isDeactivatingTesis = true;
+
+    try {
+      await this.consultasService.deactivateTesis([tesisId]);
+      this.selectedTesisIds.delete(tesisId);
+      this.alertaService.mostrarAlerta(
+        'exito',
+        'Tesis desactivada',
+        'La tesis fue desactivada correctamente.',
+      );
+      this.loadTesis();
+    } catch (error) {
+      this.alertaService.mostrarAlerta(
+        'error',
+        'Error',
+        'No se pudo desactivar la tesis.',
+      );
+    } finally {
+      this.isDeactivatingTesis = false;
+    }
+  }
+
+  async deactivateSelectedTesis(): Promise<void> {
+    if (this.userRole !== 'secretario') {
+      return;
+    }
+
+    const ids = Array.from(this.selectedTesisIds);
+
+    if (!ids.length) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Se desactivarán ${ids.length} tesis. ¿Deseas continuar?`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    this.isDeactivatingTesis = true;
+
+    try {
+      await this.consultasService.deactivateTesis(ids);
+      this.selectedTesisIds.clear();
+      this.alertaService.mostrarAlerta(
+        'exito',
+        'Tesis desactivadas',
+        `${ids.length} tesis fueron desactivadas correctamente.`,
+      );
+      this.loadTesis();
+    } catch (error) {
+      this.alertaService.mostrarAlerta(
+        'error',
+        'Error',
+        'No se pudieron desactivar las tesis seleccionadas.',
+      );
+    } finally {
+      this.isDeactivatingTesis = false;
+    }
   }
 
   goToTracking(tesisId: string): void {
@@ -432,6 +619,73 @@ export class InfoComponent implements OnInit {
     return this.filteredTesis.filter(
       (t) => t.status === 'Pendiente de Aprobar',
     );
+  }
+
+  get totalActivePages(): number {
+    return Math.max(1, Math.ceil(this.tesisActivas.length / this.pageSize));
+  }
+
+  get totalPendingPages(): number {
+    return Math.max(1, Math.ceil(this.tesisPendientes.length / this.pageSize));
+  }
+
+  get paginatedTesisActivas() {
+    this.activePage = this.normalizePage(
+      this.activePage,
+      this.totalActivePages,
+    );
+    const start = (this.activePage - 1) * this.pageSize;
+    return this.tesisActivas.slice(start, start + this.pageSize);
+  }
+
+  get paginatedTesisPendientes() {
+    this.pendingPage = this.normalizePage(
+      this.pendingPage,
+      this.totalPendingPages,
+    );
+    const start = (this.pendingPage - 1) * this.pageSize;
+    return this.tesisPendientes.slice(start, start + this.pageSize);
+  }
+
+  get activeRangeStart(): number {
+    if (!this.tesisActivas.length) {
+      return 0;
+    }
+    return (this.activePage - 1) * this.pageSize + 1;
+  }
+
+  get activeRangeEnd(): number {
+    return Math.min(this.activePage * this.pageSize, this.tesisActivas.length);
+  }
+
+  get pendingRangeStart(): number {
+    if (!this.tesisPendientes.length) {
+      return 0;
+    }
+    return (this.pendingPage - 1) * this.pageSize + 1;
+  }
+
+  get pendingRangeEnd(): number {
+    return Math.min(
+      this.pendingPage * this.pageSize,
+      this.tesisPendientes.length,
+    );
+  }
+
+  private clampPages(): void {
+    this.activePage = this.normalizePage(
+      this.activePage,
+      this.totalActivePages,
+    );
+    this.pendingPage = this.normalizePage(
+      this.pendingPage,
+      this.totalPendingPages,
+    );
+  }
+
+  private normalizePage(page: number, totalPages: number): number {
+    const safePage = Number.isFinite(page) ? Math.trunc(page) : 1;
+    return Math.min(Math.max(safePage, 1), Math.max(totalPages, 1));
   }
 
   // 2. Función para Aprobar

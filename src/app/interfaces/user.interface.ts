@@ -4,5 +4,6 @@ export default interface User {
   lastName: string;
   email: string;
   role: string;
+  isPPL?: boolean;
   currentLoad?: number;
 }

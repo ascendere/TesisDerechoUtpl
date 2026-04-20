@@ -11,6 +11,10 @@ export class DirectorioService {
     private storage: AngularFireStorage,
   ) {}
 
+  private isUserActive(user: any): boolean {
+    return user?.isActive === true;
+  }
+
   // Obtener materias con filtro opcional por nombre
   getSubjects(searchTerm?: string): Observable<any[]> {
     return this.afs
@@ -26,24 +30,42 @@ export class DirectorioService {
       .valueChanges({ idField: 'id' });
   }
 
+  async createSubject(payload: {
+    name: string;
+    description?: string;
+  }): Promise<void> {
+    const name = `${payload?.name || ''}`.trim();
+    const description = `${payload?.description || ''}`.trim();
+
+    if (!name) {
+      throw new Error('El nombre de la materia es obligatorio.');
+    }
+
+    const duplicated = await this.afs
+      .collection('subjects', (ref) => ref.where('name', '==', name))
+      .get()
+      .toPromise();
+
+    if (duplicated && !duplicated.empty) {
+      throw new Error('Ya existe una materia registrada con ese nombre.');
+    }
+
+    await this.afs.collection('subjects').add({
+      name,
+      description,
+      questions: [],
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+  }
+
   // Obtener solo usuarios con rol docente
   getTeachers(searchTerm?: string): Observable<any[]> {
     return this.afs
-      .collection('users', (ref) => {
-        let query = ref.where('role', '==', 'docente');
-        if (searchTerm)
-          query = query
-            .where('lastName', '>=', searchTerm)
-            .where('lastName', '<=', searchTerm + '\uf8ff');
-        return query;
-      })
-      .valueChanges({ idField: 'id' });
-  }
-
-  // Obtener docentes elegibles para asignación de cursos (sin depender de description)
-  getTeachersForCourseSelection(searchTerm?: string): Observable<any[]> {
-    return this.afs
-      .collection('users')
+      .collection('users', (ref) =>
+        ref.where('role', '==', 'docente').where('isActive', '==', true),
+      )
       .snapshotChanges()
       .pipe(
         map((actions) =>
@@ -57,7 +79,42 @@ export class DirectorioService {
 
           let teachers = (users || []).filter((user: any) => {
             const role = `${user?.role || ''}`.toLowerCase().trim();
-            return role === 'docente' && !!user?.id;
+            return role === 'docente' && this.isUserActive(user);
+          });
+
+          if (term) {
+            teachers = teachers.filter((teacher: any) => {
+              const lastName =
+                `${teacher?.lastName || teacher?.apellido || ''}`.toLowerCase();
+              return lastName.includes(term);
+            });
+          }
+
+          return teachers;
+        }),
+      );
+  }
+
+  // Obtener docentes elegibles para asignación de cursos (sin depender de description)
+  getTeachersForCourseSelection(searchTerm?: string): Observable<any[]> {
+    return this.afs
+      .collection('users', (ref) =>
+        ref.where('role', '==', 'docente').where('isActive', '==', true),
+      )
+      .snapshotChanges()
+      .pipe(
+        map((actions) =>
+          actions.map((action) => ({
+            id: action.payload.doc.id,
+            ...(action.payload.doc.data() as any),
+          })),
+        ),
+        map((users: any[]) => {
+          const term = `${searchTerm || ''}`.toLowerCase().trim();
+
+          let teachers = (users || []).filter((user: any) => {
+            const role = `${user?.role || ''}`.toLowerCase().trim();
+            return role === 'docente' && !!user?.id && this.isUserActive(user);
           });
 
           if (term) {
@@ -94,7 +151,67 @@ export class DirectorioService {
 
   // Obtener usuarios autorizados para secretaría
   getAuthorizedUsers(): Observable<any[]> {
-    return this.afs.collection('authorized').valueChanges({ idField: 'id' });
+    return this.afs
+      .collection('authorized', (ref) => ref.where('isActive', '==', true))
+      .valueChanges({ idField: 'id' });
+  }
+
+  async deactivateAuthorizedUsers(emails: string[]): Promise<void> {
+    const normalizedEmails = Array.from(
+      new Set(
+        (emails || [])
+          .map((email) => `${email || ''}`.toLowerCase().trim())
+          .filter((email) => !!email),
+      ),
+    );
+
+    if (!normalizedEmails.length) {
+      return;
+    }
+
+    const userDocsByEmail = await Promise.all(
+      normalizedEmails.map(async (email) => {
+        const snapshot = await this.afs
+          .collection('users', (ref) => ref.where('email', '==', email))
+          .get()
+          .toPromise();
+
+        return {
+          email,
+          docs: snapshot?.docs || [],
+        };
+      }),
+    );
+
+    const batch = this.afs.firestore.batch();
+
+    normalizedEmails.forEach((email) => {
+      const ref = this.afs.collection('authorized').doc(email).ref;
+      batch.set(
+        ref,
+        {
+          isActive: false,
+          status: 'disabled',
+          updatedAt: new Date(),
+        },
+        { merge: true },
+      );
+    });
+
+    userDocsByEmail.forEach(({ docs }) => {
+      docs.forEach((doc) => {
+        batch.set(
+          doc.ref,
+          {
+            isActive: false,
+            updatedAt: new Date(),
+          },
+          { merge: true },
+        );
+      });
+    });
+
+    await batch.commit();
   }
 
   // Obtener ciclo académico activo (estatus === true)
@@ -122,7 +239,7 @@ export class DirectorioService {
   // Obtener cursos (clases) enriquecidos con docente y ciclo
   getCourses(searchTerm?: string): Observable<any[]> {
     return this.afs
-      .collection('classes', (ref) => ref.orderBy('subjectName'))
+      .collection('classes', (ref) => ref.where('isActive', '==', true))
       .snapshotChanges()
       .pipe(
         map((actions) =>
@@ -156,31 +273,122 @@ export class DirectorioService {
             map((enrichedCourses) => {
               const term = `${searchTerm || ''}`.toLowerCase().trim();
 
-              if (!term) {
-                return enrichedCourses;
-              }
+              const filteredCourses = !term
+                ? enrichedCourses
+                : enrichedCourses.filter((course) => {
+                    const subjectName =
+                      `${course.subjectName || ''}`.toLowerCase();
+                    const parallel = `${course.parallel || ''}`.toLowerCase();
+                    const type =
+                      `${course.type || course.modality || ''}`.toLowerCase();
+                    const professorName =
+                      `${course.professorName || ''}`.toLowerCase();
+                    const cycleName = `${course.cycleName || ''}`.toLowerCase();
 
-              return enrichedCourses.filter((course) => {
-                const subjectName = `${course.subjectName || ''}`.toLowerCase();
-                const parallel = `${course.parallel || ''}`.toLowerCase();
-                const type =
-                  `${course.type || course.modality || ''}`.toLowerCase();
-                const professorName =
-                  `${course.professorName || ''}`.toLowerCase();
-                const cycleName = `${course.cycleName || ''}`.toLowerCase();
+                    return (
+                      subjectName.includes(term) ||
+                      parallel.includes(term) ||
+                      type.includes(term) ||
+                      professorName.includes(term) ||
+                      cycleName.includes(term)
+                    );
+                  });
 
-                return (
-                  subjectName.includes(term) ||
-                  parallel.includes(term) ||
-                  type.includes(term) ||
-                  professorName.includes(term) ||
-                  cycleName.includes(term)
-                );
-              });
+              return [...filteredCourses].sort((a, b) =>
+                `${a?.subjectName || ''}`.localeCompare(
+                  `${b?.subjectName || ''}`,
+                ),
+              );
             }),
           );
         }),
       );
+  }
+
+  async createCourse(payload: {
+    subjectName: string;
+    parallel: string;
+    type: string;
+    modality?: string;
+    professorId?: string;
+    cycleId: string;
+    cicleId?: string;
+  }): Promise<void> {
+    const subjectName = `${payload?.subjectName || ''}`.trim();
+    const parallel = `${payload?.parallel || ''}`.trim().toUpperCase();
+    const type = `${payload?.type || ''}`.trim().toLowerCase();
+    const modality = `${payload?.modality || type || ''}`.trim().toLowerCase();
+    const professorId = `${payload?.professorId || ''}`.trim();
+    const cycleId = `${payload?.cycleId || ''}`.trim();
+    const cicleId = `${payload?.cicleId || cycleId}`.trim();
+
+    if (!subjectName || !parallel || !type || !cycleId) {
+      throw new Error('Faltan datos obligatorios para crear el curso.');
+    }
+
+    const duplicated = await this.afs
+      .collection('classes', (ref) =>
+        ref
+          .where('subjectName', '==', subjectName)
+          .where('parallel', '==', parallel)
+          .where('cycleId', '==', cycleId)
+          .where('isActive', '==', true),
+      )
+      .get()
+      .toPromise();
+
+    if (duplicated && !duplicated.empty) {
+      throw new Error(
+        'Ya existe un curso activo para esa materia, paralelo y ciclo.',
+      );
+    }
+
+    await this.afs.collection('classes').add({
+      subjectName,
+      parallel,
+      type,
+      modality,
+      professorId,
+      cycleId,
+      cicleId,
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+  }
+
+  async deactivateCourse(courseId: string): Promise<void> {
+    await this.deactivateCourses([courseId]);
+  }
+
+  async deactivateCourses(courseIds: string[]): Promise<void> {
+    const normalizedCourseIds = Array.from(
+      new Set(
+        (courseIds || [])
+          .map((courseId) => `${courseId || ''}`.trim())
+          .filter(Boolean),
+      ),
+    );
+
+    if (!normalizedCourseIds.length) {
+      return;
+    }
+
+    const batch = this.afs.firestore.batch();
+
+    normalizedCourseIds.forEach((courseId) => {
+      const classRef = this.afs.collection('classes').doc(courseId).ref;
+      batch.set(
+        classRef,
+        {
+          isActive: false,
+          updatedAt: new Date(),
+        },
+        { merge: true },
+      );
+    });
+
+    await batch.commit();
   }
 
   // Lógica de actualización genérica para cualquier campo

@@ -6,7 +6,9 @@
     "shell": "firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "logs": "firebase functions:log",
+    "migrate:authorized:activation:dry": "node migrations/migrate-authorized-activation-status.js --dry-run",
+    "migrate:authorized:activation": "node migrations/migrate-authorized-activation-status.js --apply"
   },
   "engines": {
     "node": "20"

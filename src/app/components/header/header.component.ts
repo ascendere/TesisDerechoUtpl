@@ -6,7 +6,7 @@ import User from '../../interfaces/user.interface';
 @Component({
   selector: 'app-header',
   templateUrl: './header.component.html',
-  styleUrls: ['./header.component.css']
+  styleUrls: ['./header.component.css'],
 })
 export class HeaderComponent implements OnInit {
   loggedIn: boolean = false;
@@ -14,7 +14,10 @@ export class HeaderComponent implements OnInit {
   menuOpen: boolean = false; // Control del menú en móviles
   botonOpen: boolean = false; // Control del dropdown de usuario
 
-  constructor(private loginService: LoginService, private router: Router) {}
+  constructor(
+    private loginService: LoginService,
+    private router: Router,
+  ) {}
 
   ngOnInit(): void {
     this.loginService.isLoggedIn().subscribe((isLoggedIn) => {

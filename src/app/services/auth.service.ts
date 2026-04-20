@@ -83,6 +83,7 @@ export class AuthService {
         professorId: uid,
         cycleId: tempData.cycleId,
         type: tempData.modality || 'presencial',
+        isActive: true,
         createdAt: new Date(),
       });
     }

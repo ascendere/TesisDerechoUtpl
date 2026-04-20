@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, Subscription } from 'rxjs';
-import { take } from 'rxjs/operators';
+import { map, take } from 'rxjs/operators';
 import * as XLSX from 'xlsx';
 import { AlertaService } from '../../services/alert.service';
 import { DirectorioService } from '../../services/directorio.service';
@@ -14,21 +14,29 @@ import { LoginService } from '../../services/login.service';
   styleUrls: ['./directorio-autorizados.component.css'],
 })
 export class DirectorioAutorizadosComponent implements OnInit, OnDestroy {
+  private static readonly PAGINATION_STORAGE_KEY =
+    'directorio-autorizados-pagination-v1';
+
   mainView: 'personas' | 'materias' | 'cursos' = 'personas';
 
   authorizedUsers: any[] = [];
   filteredUsers: any[] = [];
-  groupedUsers: Record<string, any[]> = {};
-  visibleRoles: string[] = [];
 
   showModal = false;
   selectedRole: string = 'todos';
+  selectedStatus: 'todos' | 'registered' | 'pending' = 'todos';
   searchTerm: string = '';
+  currentPage = 1;
+  pageSize = 10;
   isLoadingAuthorized = true;
   isProcessingUser = false;
+  isDeactivatingUsers = false;
+  isDeactivatingCourses = false;
   selectedFile: File | null = null;
   feedbackMessage = '';
   isError = false;
+  selectedAuthorizedEmails = new Set<string>();
+  selectedCourseIds = new Set<string>();
 
   activeCycleId: string = '';
   activeCycleName: string = '';
@@ -44,6 +52,7 @@ export class DirectorioAutorizadosComponent implements OnInit, OnDestroy {
     apellido: '',
     email: '',
     cedula: '',
+    isPPL: false,
     asignatura: '',
     paralelo: '',
     titulo: '',
@@ -65,6 +74,22 @@ export class DirectorioAutorizadosComponent implements OnInit, OnDestroy {
   showDirectoryEditModal = false;
   directoryEditMode: 'subject' | null = null;
   selectedDirectoryItem: any = null;
+  showCreateSubjectModal = false;
+  isCreatingSubject = false;
+  newSubject = {
+    name: '',
+    description: '',
+  };
+
+  showCreateCourseModal = false;
+  isCreatingCourse = false;
+  subjectOptions: any[] = [];
+  newCourse = {
+    subjectName: '',
+    parallel: '',
+    type: 'presencial',
+    professorId: '',
+  };
 
   showTeacherEditModal = false;
   selectedTeacherItem: any = null;
@@ -80,14 +105,16 @@ export class DirectorioAutorizadosComponent implements OnInit, OnDestroy {
     'secretario',
   ];
 
-  readonly roleOrder: string[] = [
-    'estudiante',
-    'docente',
-    'director',
-    'evaluador',
-    'secretario',
-    'sin_rol',
+  readonly statusOptions: Array<{
+    value: 'todos' | 'registered' | 'pending';
+    label: string;
+  }> = [
+    { value: 'todos', label: 'Todos' },
+    { value: 'registered', label: 'Registrado' },
+    { value: 'pending', label: 'No registrado' },
   ];
+
+  readonly pageSizeOptions: number[] = [10, 20, 50];
 
   readonly teacherTemplateUrl: string =
     'https://firebasestorage.googleapis.com/v0/b/tesisderechoutpl.appspot.com/o/PlantillaUpload%2FPlantilla.xlsx?alt=media&token=34aafdb8-86f4-478d-800f-2c21cef1651c';
@@ -103,6 +130,8 @@ export class DirectorioAutorizadosComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.loadPaginationPreferences();
+
     this.loginService
       .getCurrentUser()
       .pipe(take(1))
@@ -140,11 +169,15 @@ export class DirectorioAutorizadosComponent implements OnInit, OnDestroy {
 
     this.directorioService.getAuthorizedUsers().subscribe({
       next: (data: any[]) => {
-        this.authorizedUsers = (data || []).map((user) => ({
-          ...user,
-          role: this.normalizeRole(user.role),
-        }));
-        this.applyFilters();
+        this.authorizedUsers = (data || [])
+          .map((user) => ({
+            ...user,
+            role: this.normalizeRole(user.role),
+            isActive: this.isAuthorizedActive(user),
+          }))
+          .filter((user) => user.isActive !== false);
+        this.syncSelectedAuthorizedEmails();
+        this.applyFilters(false);
         this.isLoadingAuthorized = false;
       },
       error: (error) => {
@@ -188,7 +221,7 @@ export class DirectorioAutorizadosComponent implements OnInit, OnDestroy {
       });
   }
 
-  applyFilters(): void {
+  applyFilters(resetPage: boolean = true): void {
     const term = this.searchTerm.trim().toLowerCase();
     let users = [...this.authorizedUsers];
 
@@ -198,38 +231,313 @@ export class DirectorioAutorizadosComponent implements OnInit, OnDestroy {
       );
     }
 
+    if (this.selectedStatus !== 'todos') {
+      users = users.filter((user) => {
+        const status = this.normalizeStatus(user?.status);
+
+        if (this.selectedStatus === 'registered') {
+          return status === 'registered';
+        }
+
+        return status === 'no registered' || status === 'pending';
+      });
+    }
+
     if (term) {
       users = users.filter((user) => this.matchesSearch(user, term));
     }
 
     this.filteredUsers = users;
 
-    const grouped: Record<string, any[]> = {
-      estudiante: [],
-      docente: [],
-      director: [],
-      evaluador: [],
-      secretario: [],
-      sin_rol: [],
-    };
+    if (resetPage) {
+      this.currentPage = 1;
+    }
 
-    users.forEach((user) => {
-      const role = this.normalizeRole(user.role);
-      grouped[role].push(user);
-    });
-
-    this.groupedUsers = grouped;
-    this.visibleRoles =
-      this.selectedRole === 'todos'
-        ? this.roleOrder.filter((role) => grouped[role]?.length > 0)
-        : this.roleOrder.filter(
-            (role) => role === this.selectedRole && grouped[role]?.length > 0,
-          );
+    this.ensureCurrentPageInRange();
+    this.savePaginationPreferences();
   }
 
   setRoleFilter(role: string): void {
     this.selectedRole = this.selectedRole === role ? 'todos' : role;
     this.applyFilters();
+  }
+
+  onPageSizeChange(): void {
+    this.currentPage = 1;
+    this.savePaginationPreferences();
+  }
+
+  get selectedUsersCount(): number {
+    return this.selectedAuthorizedEmails.size;
+  }
+
+  get hasSelectedUsers(): boolean {
+    return this.selectedUsersCount > 0;
+  }
+
+  get allFilteredSelected(): boolean {
+    if (!this.filteredUsers.length) {
+      return false;
+    }
+
+    return this.filteredUsers.every((user) =>
+      this.selectedAuthorizedEmails.has(this.getAuthorizedEmail(user)),
+    );
+  }
+
+  get allCurrentPageSelected(): boolean {
+    if (!this.paginatedUsers.length) {
+      return false;
+    }
+
+    return this.paginatedUsers.every((user) =>
+      this.selectedAuthorizedEmails.has(this.getAuthorizedEmail(user)),
+    );
+  }
+
+  toggleSelectUser(user: any, checked: boolean): void {
+    const email = this.getAuthorizedEmail(user);
+
+    if (!email) {
+      return;
+    }
+
+    if (checked) {
+      this.selectedAuthorizedEmails.add(email);
+    } else {
+      this.selectedAuthorizedEmails.delete(email);
+    }
+  }
+
+  isUserSelected(user: any): boolean {
+    return this.selectedAuthorizedEmails.has(this.getAuthorizedEmail(user));
+  }
+
+  toggleSelectAllCurrentPage(checked: boolean): void {
+    this.paginatedUsers.forEach((user) => {
+      const email = this.getAuthorizedEmail(user);
+      if (!email) {
+        return;
+      }
+
+      if (checked) {
+        this.selectedAuthorizedEmails.add(email);
+      } else {
+        this.selectedAuthorizedEmails.delete(email);
+      }
+    });
+  }
+
+  selectAllFilteredUsers(): void {
+    this.filteredUsers.forEach((user) => {
+      const email = this.getAuthorizedEmail(user);
+      if (email) {
+        this.selectedAuthorizedEmails.add(email);
+      }
+    });
+  }
+
+  clearSelectedUsers(): void {
+    this.selectedAuthorizedEmails.clear();
+  }
+
+  async deactivateUser(user: any): Promise<void> {
+    const email = this.getAuthorizedEmail(user);
+
+    if (!email) {
+      this.alertaService.mostrarAlerta(
+        'error',
+        'Error',
+        'No se pudo identificar el correo del usuario.',
+      );
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Se desactivará el usuario ${email}. ¿Deseas continuar?`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    this.isDeactivatingUsers = true;
+
+    try {
+      await this.directorioService.deactivateAuthorizedUsers([email]);
+      this.selectedAuthorizedEmails.delete(email);
+      this.alertaService.mostrarAlerta(
+        'exito',
+        'Usuario desactivado',
+        'El usuario fue desactivado correctamente.',
+      );
+    } catch (error) {
+      this.alertaService.mostrarAlerta(
+        'error',
+        'Error',
+        'No se pudo desactivar el usuario seleccionado.',
+      );
+      console.error('Error al desactivar usuario:', error);
+    } finally {
+      this.isDeactivatingUsers = false;
+    }
+  }
+
+  async deactivateSelectedUsers(): Promise<void> {
+    const emails = Array.from(this.selectedAuthorizedEmails);
+
+    if (!emails.length) {
+      this.alertaService.mostrarAlerta(
+        'info',
+        'Sin selección',
+        'Selecciona al menos un usuario para desactivar.',
+      );
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Se desactivarán ${emails.length} usuario(s). ¿Deseas continuar?`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    this.isDeactivatingUsers = true;
+
+    try {
+      await this.directorioService.deactivateAuthorizedUsers(emails);
+      this.selectedAuthorizedEmails.clear();
+      this.alertaService.mostrarAlerta(
+        'exito',
+        'Usuarios desactivados',
+        `${emails.length} usuario(s) fueron desactivados correctamente.`,
+      );
+    } catch (error) {
+      this.alertaService.mostrarAlerta(
+        'error',
+        'Error',
+        'No se pudieron desactivar los usuarios seleccionados.',
+      );
+      console.error('Error al desactivar usuarios:', error);
+    } finally {
+      this.isDeactivatingUsers = false;
+    }
+  }
+
+  goToPrevPage(): void {
+    if (this.currentPage > 1) {
+      this.currentPage -= 1;
+      this.savePaginationPreferences();
+    }
+  }
+
+  goToNextPage(): void {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage += 1;
+      this.savePaginationPreferences();
+    }
+  }
+
+  goToPage(page: number): void {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+      this.savePaginationPreferences();
+    }
+  }
+
+  get totalPages(): number {
+    return Math.max(1, Math.ceil(this.filteredUsers.length / this.pageSize));
+  }
+
+  get paginatedUsers(): any[] {
+    const start = (this.currentPage - 1) * this.pageSize;
+    return this.filteredUsers.slice(start, start + this.pageSize);
+  }
+
+  get startItem(): number {
+    if (!this.filteredUsers.length) {
+      return 0;
+    }
+
+    return (this.currentPage - 1) * this.pageSize + 1;
+  }
+
+  get endItem(): number {
+    return Math.min(
+      this.currentPage * this.pageSize,
+      this.filteredUsers.length,
+    );
+  }
+
+  get visiblePageNumbers(): number[] {
+    const pages: number[] = [];
+    const maxVisible = 5;
+    let start = Math.max(1, this.currentPage - 2);
+    let end = Math.min(this.totalPages, start + maxVisible - 1);
+
+    if (end - start + 1 < maxVisible) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+
+    for (let page = start; page <= end; page += 1) {
+      pages.push(page);
+    }
+
+    return pages;
+  }
+
+  private ensureCurrentPageInRange(): void {
+    if (this.currentPage < 1) {
+      this.currentPage = 1;
+      return;
+    }
+
+    if (this.currentPage > this.totalPages) {
+      this.currentPage = this.totalPages;
+    }
+  }
+
+  private loadPaginationPreferences(): void {
+    try {
+      const raw = localStorage.getItem(
+        DirectorioAutorizadosComponent.PAGINATION_STORAGE_KEY,
+      );
+
+      if (!raw) {
+        return;
+      }
+
+      const parsed = JSON.parse(raw);
+      const savedPageSize = Number(parsed?.pageSize);
+      const savedCurrentPage = Number(parsed?.currentPage);
+
+      if (this.pageSizeOptions.includes(savedPageSize)) {
+        this.pageSize = savedPageSize;
+      }
+
+      if (Number.isFinite(savedCurrentPage) && savedCurrentPage >= 1) {
+        this.currentPage = Math.floor(savedCurrentPage);
+      }
+    } catch {
+      localStorage.removeItem(
+        DirectorioAutorizadosComponent.PAGINATION_STORAGE_KEY,
+      );
+    }
+  }
+
+  private savePaginationPreferences(): void {
+    try {
+      localStorage.setItem(
+        DirectorioAutorizadosComponent.PAGINATION_STORAGE_KEY,
+        JSON.stringify({
+          pageSize: this.pageSize,
+          currentPage: this.currentPage,
+        }),
+      );
+    } catch {
+      // Ignore storage write errors to avoid affecting the UI.
+    }
   }
 
   setMainView(view: 'personas' | 'materias' | 'cursos'): void {
@@ -245,23 +553,13 @@ export class DirectorioAutorizadosComponent implements OnInit, OnDestroy {
     }
   }
 
-  getRoleCount(role: string): number {
-    return this.authorizedUsers.filter(
-      (user) => this.normalizeRole(user.role) === role,
-    ).length;
-  }
-
-  getUsersByRole(role: string): any[] {
-    return this.groupedUsers[role] || [];
-  }
-
   getRoleLabel(role: string): string {
     const labels: Record<string, string> = {
-      estudiante: 'Estudiantes',
-      docente: 'Docentes',
-      director: 'Directores',
-      evaluador: 'Evaluadores',
-      secretario: 'Secretaría',
+      estudiante: 'Estudiante',
+      docente: 'Docente',
+      director: 'Director',
+      evaluador: 'Evaluador',
+      secretario: 'Secretario',
       sin_rol: 'Sin rol',
     };
 
@@ -300,6 +598,7 @@ export class DirectorioAutorizadosComponent implements OnInit, OnDestroy {
     if (status === 'registered') return 'Registrado';
     if (status === 'no registered' || status === 'pending')
       return 'No registrado';
+    if (status === 'disabled') return 'Desactivado';
 
     return 'Autorizado';
   }
@@ -344,6 +643,28 @@ export class DirectorioAutorizadosComponent implements OnInit, OnDestroy {
 
   trackByEmail(index: number, user: any): string {
     return user.email || user.id || `${index}`;
+  }
+
+  private getAuthorizedEmail(user: any): string {
+    return `${user?.email || user?.id || ''}`.toLowerCase().trim();
+  }
+
+  private syncSelectedAuthorizedEmails(): void {
+    if (!this.selectedAuthorizedEmails.size) {
+      return;
+    }
+
+    const activeEmails = new Set(
+      this.authorizedUsers
+        .map((user) => this.getAuthorizedEmail(user))
+        .filter((email) => !!email),
+    );
+
+    Array.from(this.selectedAuthorizedEmails).forEach((email) => {
+      if (!activeEmails.has(email)) {
+        this.selectedAuthorizedEmails.delete(email);
+      }
+    });
   }
 
   openCreateModal(): void {
@@ -404,7 +725,6 @@ export class DirectorioAutorizadosComponent implements OnInit, OnDestroy {
         }
 
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        const seenEmails = new Set<string>();
         const payload: any[] = [];
 
         for (const [index, row] of rows.entries()) {
@@ -427,6 +747,8 @@ export class DirectorioAutorizadosComponent implements OnInit, OnDestroy {
             lastName: String(row.apellido).trim(),
             cedula: row.cedula ? String(row.cedula).trim() : null,
             role: this.selectedRoleForUpload,
+            isPPL: this.parsePPLValue(row.ppl),
+            sourceRow: fila,
           };
 
           if (this.selectedRoleForUpload === 'docente') {
@@ -435,11 +757,6 @@ export class DirectorioAutorizadosComponent implements OnInit, OnDestroy {
                 `Fila ${fila}: Los docentes requieren Asignatura y Paralelo.`,
               );
             }
-
-            if (seenEmails.has(email)) {
-              continue;
-            }
-            seenEmails.add(email);
 
             userEntry.degree = row.titulo ? String(row.titulo).trim() : 'Abg.';
             userEntry.tempData = {
@@ -455,10 +772,11 @@ export class DirectorioAutorizadosComponent implements OnInit, OnDestroy {
           payload.push(userEntry);
         }
 
-        await this.importService.saveUsersToAuthorized(payload);
+        const report = await this.importService.saveUsersToAuthorized(payload);
 
-        this.isError = false;
-        this.feedbackMessage = `Éxito: ${payload.length} registros de ${this.selectedRoleForUpload} procesados.`;
+        this.isError = report.created === 0 && report.reactivated === 0;
+        this.feedbackMessage = this.buildAuthorizedSaveMessage(report, 'bulk');
+
         this.loadAuthorizedUsers();
       } catch (error: any) {
         this.isError = true;
@@ -494,6 +812,10 @@ export class DirectorioAutorizadosComponent implements OnInit, OnDestroy {
         email: this.newUser.email.trim().toLowerCase(),
         cedula: String(this.newUser.cedula).trim(),
         role: this.selectedRoleForUpload,
+        isPPL:
+          this.selectedRoleForUpload === 'estudiante'
+            ? this.newUser.isPPL === true
+            : false,
       };
 
       if (this.selectedRoleForUpload === 'docente') {
@@ -525,10 +847,12 @@ export class DirectorioAutorizadosComponent implements OnInit, OnDestroy {
         throw new Error('Por favor completa los campos obligatorios.');
       }
 
-      await this.importService.saveUsersToAuthorized([cleanUser]);
+      const report = await this.importService.saveUsersToAuthorized([
+        cleanUser,
+      ]);
 
-      this.isError = false;
-      this.feedbackMessage = 'Usuario guardado correctamente.';
+      this.isError = report.created === 0 && report.reactivated === 0;
+      this.feedbackMessage = this.buildAuthorizedSaveMessage(report, 'manual');
       this.resetManualForm();
       this.loadAuthorizedUsers();
     } catch (error: any) {
@@ -545,11 +869,16 @@ export class DirectorioAutorizadosComponent implements OnInit, OnDestroy {
       apellido: '',
       email: '',
       cedula: '',
+      isPPL: false,
       asignatura: '',
       paralelo: '',
       titulo: '',
       modalidad: '',
     };
+  }
+
+  private parsePPLValue(value: any): boolean {
+    return `${value || ''}`.trim().toLowerCase() === 's';
   }
 
   openTeacherEditModal(user: any): void {
@@ -678,10 +1007,280 @@ export class DirectorioAutorizadosComponent implements OnInit, OnDestroy {
     );
   }
 
+  openCreateSubjectModal(): void {
+    this.newSubject = {
+      name: '',
+      description: '',
+    };
+    this.showCreateSubjectModal = true;
+    this.isCreatingSubject = false;
+  }
+
+  closeCreateSubjectModal(): void {
+    this.showCreateSubjectModal = false;
+    this.isCreatingSubject = false;
+  }
+
+  async saveNewSubject(): Promise<void> {
+    const name = `${this.newSubject.name || ''}`.trim();
+    const description = `${this.newSubject.description || ''}`.trim();
+
+    if (!name) {
+      this.alertaService.mostrarAlerta(
+        'error',
+        'Campo requerido',
+        'Debes ingresar el nombre de la materia.',
+      );
+      return;
+    }
+
+    this.isCreatingSubject = true;
+
+    try {
+      await this.directorioService.createSubject({
+        name,
+        description,
+      });
+
+      this.alertaService.mostrarAlerta(
+        'exito',
+        'Materia creada',
+        'La materia fue creada correctamente.',
+      );
+
+      this.closeCreateSubjectModal();
+      this.searchDirectory();
+    } catch (error: any) {
+      this.alertaService.mostrarAlerta(
+        'error',
+        'Error',
+        error?.message || 'No se pudo crear la materia.',
+      );
+    } finally {
+      this.isCreatingSubject = false;
+    }
+  }
+
   searchCourses(): void {
-    this.coursesData$ = this.directorioService.getCourses(
-      this.courseSearchTerm,
+    this.coursesData$ = this.directorioService
+      .getCourses(this.courseSearchTerm)
+      .pipe(
+        map((courses) => {
+          this.syncSelectedCourseIds(courses || []);
+          return courses || [];
+        }),
+      );
+  }
+
+  openCreateCourseModal(): void {
+    if (!this.activeCycleId) {
+      this.alertaService.mostrarAlerta(
+        'info',
+        'Ciclo no definido',
+        'No existe un ciclo académico activo para crear cursos.',
+      );
+      return;
+    }
+
+    this.newCourse = {
+      subjectName: '',
+      parallel: '',
+      type: 'presencial',
+      professorId: '',
+    };
+
+    this.subjectOptions = [];
+    this.directorioService
+      .getSubjects('')
+      .pipe(take(1))
+      .subscribe((items) => {
+        this.subjectOptions = [...(items || [])].sort((a: any, b: any) =>
+          `${a?.name || ''}`.localeCompare(`${b?.name || ''}`),
+        );
+      });
+
+    if (!this.courseTeachers.length) {
+      this.loadCourseTeachers();
+    }
+
+    this.showCreateCourseModal = true;
+    this.isCreatingCourse = false;
+  }
+
+  closeCreateCourseModal(): void {
+    this.showCreateCourseModal = false;
+    this.isCreatingCourse = false;
+  }
+
+  async saveNewCourse(): Promise<void> {
+    const subjectName = `${this.newCourse.subjectName || ''}`.trim();
+    const parallel = `${this.newCourse.parallel || ''}`.trim().toUpperCase();
+    const type = `${this.newCourse.type || ''}`.trim().toLowerCase();
+    const professorId = `${this.newCourse.professorId || ''}`.trim();
+
+    if (!this.activeCycleId) {
+      this.alertaService.mostrarAlerta(
+        'error',
+        'Ciclo no definido',
+        'No existe un ciclo académico activo para crear cursos.',
+      );
+      return;
+    }
+
+    if (!subjectName || !parallel || !type) {
+      this.alertaService.mostrarAlerta(
+        'error',
+        'Campos requeridos',
+        'Debes completar asignatura, paralelo y modalidad.',
+      );
+      return;
+    }
+
+    this.isCreatingCourse = true;
+
+    try {
+      await this.directorioService.createCourse({
+        subjectName,
+        parallel,
+        type,
+        modality: type,
+        professorId,
+        cycleId: this.activeCycleId,
+        cicleId: this.activeCycleId,
+      });
+
+      this.alertaService.mostrarAlerta(
+        'exito',
+        'Curso creado',
+        'El curso fue creado correctamente.',
+      );
+
+      this.closeCreateCourseModal();
+      this.searchCourses();
+    } catch (error: any) {
+      this.alertaService.mostrarAlerta(
+        'error',
+        'Error',
+        error?.message || 'No se pudo crear el curso.',
+      );
+    } finally {
+      this.isCreatingCourse = false;
+    }
+  }
+
+  get selectedCoursesCount(): number {
+    return this.selectedCourseIds.size;
+  }
+
+  get hasSelectedCourses(): boolean {
+    return this.selectedCoursesCount > 0;
+  }
+
+  private getCourseId(course: any): string {
+    return `${course?.id || ''}`.trim();
+  }
+
+  private syncSelectedCourseIds(courses: any[]): void {
+    if (!this.selectedCourseIds.size) {
+      return;
+    }
+
+    const visibleIds = new Set(
+      (courses || []).map((course) => this.getCourseId(course)).filter(Boolean),
     );
+
+    Array.from(this.selectedCourseIds).forEach((courseId) => {
+      if (!visibleIds.has(courseId)) {
+        this.selectedCourseIds.delete(courseId);
+      }
+    });
+  }
+
+  allVisibleCoursesSelected(courses: any[]): boolean {
+    if (!courses?.length) {
+      return false;
+    }
+
+    return courses.every((course) =>
+      this.selectedCourseIds.has(this.getCourseId(course)),
+    );
+  }
+
+  toggleSelectCourse(course: any, checked: boolean): void {
+    const courseId = this.getCourseId(course);
+
+    if (!courseId) {
+      return;
+    }
+
+    if (checked) {
+      this.selectedCourseIds.add(courseId);
+      return;
+    }
+
+    this.selectedCourseIds.delete(courseId);
+  }
+
+  isCourseSelected(course: any): boolean {
+    return this.selectedCourseIds.has(this.getCourseId(course));
+  }
+
+  toggleSelectAllVisibleCourses(courses: any[], checked: boolean): void {
+    (courses || []).forEach((course) => {
+      const courseId = this.getCourseId(course);
+      if (!courseId) {
+        return;
+      }
+
+      if (checked) {
+        this.selectedCourseIds.add(courseId);
+      } else {
+        this.selectedCourseIds.delete(courseId);
+      }
+    });
+  }
+
+  async deactivateSelectedCourses(): Promise<void> {
+    const courseIds = Array.from(this.selectedCourseIds);
+
+    if (!courseIds.length) {
+      this.alertaService.mostrarAlerta(
+        'info',
+        'Sin selección',
+        'Selecciona al menos un curso para desactivar.',
+      );
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Se desactivarán ${courseIds.length} curso(s). ¿Deseas continuar?`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    this.isDeactivatingCourses = true;
+
+    try {
+      await this.directorioService.deactivateCourses(courseIds);
+      this.selectedCourseIds.clear();
+      this.alertaService.mostrarAlerta(
+        'exito',
+        'Cursos desactivados',
+        `${courseIds.length} curso(s) fueron desactivados correctamente.`,
+      );
+      this.searchCourses();
+    } catch (error) {
+      this.alertaService.mostrarAlerta(
+        'error',
+        'Error',
+        'No se pudieron desactivar los cursos seleccionados.',
+      );
+      console.error('Error al desactivar cursos:', error);
+    } finally {
+      this.isDeactivatingCourses = false;
+    }
   }
 
   loadCourseTeachers(): void {
@@ -790,6 +1389,44 @@ export class DirectorioAutorizadosComponent implements OnInit, OnDestroy {
     }
   }
 
+  async deactivateCourse(course: any): Promise<void> {
+    const courseId = `${course?.id || ''}`.trim();
+
+    if (!courseId) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `¿Deseas desactivar el curso ${course?.subjectName || 'seleccionado'}?`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    this.isDeactivatingCourses = true;
+
+    try {
+      await this.directorioService.deactivateCourses([courseId]);
+      this.selectedCourseIds.delete(courseId);
+      this.alertaService.mostrarAlerta(
+        'exito',
+        'Curso desactivado',
+        'El curso ya no aparecerá en los listados activos.',
+      );
+      this.searchCourses();
+    } catch (error) {
+      this.alertaService.mostrarAlerta(
+        'error',
+        'Error',
+        'No se pudo desactivar el curso.',
+      );
+      console.error('Error al desactivar curso:', error);
+    } finally {
+      this.isDeactivatingCourses = false;
+    }
+  }
+
   openDirectoryEditModal(item: any): void {
     this.selectedDirectoryItem = JSON.parse(JSON.stringify(item));
     this.directoryEditMode = 'subject';
@@ -872,7 +1509,7 @@ export class DirectorioAutorizadosComponent implements OnInit, OnDestroy {
     );
   }
 
-  private normalizeRole(role: any): string {
+  normalizeRole(role: any): string {
     const value = `${role || ''}`.toLowerCase().trim();
     return this.roleTypes.includes(value) ? value : 'sin_rol';
   }
@@ -884,7 +1521,81 @@ export class DirectorioAutorizadosComponent implements OnInit, OnDestroy {
       return 'no registered';
     }
 
+    if (
+      value === 'inactive' ||
+      value === 'disabled' ||
+      value === 'deactivated'
+    ) {
+      return 'disabled';
+    }
+
     return value;
+  }
+
+  private isAuthorizedActive(user: any): boolean {
+    return (
+      user?.isActive === true &&
+      this.normalizeStatus(user?.status) !== 'disabled'
+    );
+  }
+
+  private buildAuthorizedSaveMessage(
+    report: { created: number; reactivated: number; skipped: any[] },
+    mode: 'manual' | 'bulk',
+  ): string {
+    const labels: string[] = [];
+
+    if (report.created > 0) {
+      labels.push(
+        `${report.created} ${report.created === 1 ? 'usuario creado' : 'usuarios creados'}`,
+      );
+    }
+
+    if (report.reactivated > 0) {
+      labels.push(
+        `${report.reactivated} ${report.reactivated === 1 ? 'usuario reactivado' : 'usuarios reactivados'}`,
+      );
+    }
+
+    const summary =
+      labels.length > 0
+        ? `Éxito: ${labels.join(' y ')}.`
+        : mode === 'manual'
+          ? 'No se realizaron cambios.'
+          : 'No se realizaron cambios.';
+
+    if (!report.skipped.length) {
+      return summary;
+    }
+
+    const skippedLines = report.skipped.map((issue) => {
+      const rowPrefix = issue.row ? `Fila ${issue.row}: ` : '';
+
+      if (issue.reason === 'duplicate_email') {
+        return `${rowPrefix}el correo ${issue.email} ya existe.`;
+      }
+
+      if (issue.reason === 'duplicate_cedula') {
+        return `${rowPrefix}la cédula ${issue.cedula || 'n/d'} ya existe.`;
+      }
+
+      if (issue.reason === 'duplicate_in_file_email') {
+        return `${rowPrefix}el correo ${issue.email} está repetido en el archivo.`;
+      }
+
+      if (issue.reason === 'duplicate_in_file_cedula') {
+        return `${rowPrefix}la cédula ${issue.cedula || 'n/d'} está repetida en el archivo.`;
+      }
+
+      return `${rowPrefix}faltan datos obligatorios.`;
+    });
+
+    const skippedTitle =
+      report.created > 0 || report.reactivated > 0
+        ? 'Observaciones:'
+        : 'No se pudieron guardar registros:';
+
+    return [summary, skippedTitle, ...skippedLines].join('\n');
   }
 
   get currentTemplateUrl(): string {

@@ -42,6 +42,22 @@
       <button (click)="openCreateModal()" class="btn-primary-custom">
         Crear nuevos usuarios / Importar Excel
       </button>
+
+      <button
+        type="button"
+        class="btn-danger-action"
+        (click)="deactivateSelectedUsers()"
+        [disabled]="selectedUsersCount < 2 || isDeactivatingUsers"
+        *ngIf="selectedUsersCount >= 2"
+      >
+        {{
+          isDeactivatingUsers ? "Desactivando..." : "Desactivar seleccionados"
+        }}
+      </button>
+
+      <span class="selection-counter" *ngIf="hasSelectedUsers">
+        {{ selectedUsersCount }} seleccionado(s)
+      </span>
     </div>
 
     <div class="filters-panel">
@@ -59,6 +75,19 @@
         </select>
       </div>
 
+      <div class="field">
+        <label for="statusFilter">Filtrar por estado</label>
+        <select
+          id="statusFilter"
+          [(ngModel)]="selectedStatus"
+          (change)="applyFilters()"
+        >
+          <option *ngFor="let status of statusOptions" [value]="status.value">
+            {{ status.label }}
+          </option>
+        </select>
+      </div>
+
       <div class="field grow">
         <label for="searchAuthorized">Buscar</label>
         <input
@@ -69,19 +98,6 @@
           placeholder="Nombre, correo o cédula"
         />
       </div>
-    </div>
-
-    <div class="summary-grid">
-      <button
-        type="button"
-        class="role-summary-card"
-        *ngFor="let role of roleTypes"
-        [class.active]="selectedRole === role"
-        (click)="setRoleFilter(role)"
-      >
-        <span class="role-name">{{ getRoleLabel(role) }}</span>
-        <span class="role-count">{{ getRoleCount(role) }}</span>
-      </button>
     </div>
 
     <div *ngIf="isLoadingAuthorized" class="state-card">
@@ -95,58 +111,88 @@
       No se encontraron registros con los filtros seleccionados.
     </div>
 
-    <ng-container *ngIf="!isLoadingAuthorized && filteredUsers.length > 0">
-      <section class="role-section" *ngFor="let role of visibleRoles">
-        <h3>
-          {{ getRoleLabel(role) }}
-          <span>({{ getUsersByRole(role).length }})</span>
-        </h3>
+    <div
+      class="table-wrapper"
+      *ngIf="!isLoadingAuthorized && filteredUsers.length > 0"
+    >
+      <table class="authorized-table">
+        <thead>
+          <tr>
+            <th>
+              <input
+                type="checkbox"
+                [checked]="allCurrentPageSelected"
+                (change)="
+                  toggleSelectAllCurrentPage($any($event.target).checked)
+                "
+                aria-label="Seleccionar página"
+              />
+            </th>
+            <th>Foto</th>
+            <th>Nombre</th>
+            <th>Correo</th>
+            <th>Cédula</th>
+            <th>Rol</th>
+            <th>Estado</th>
+            <th>Detalle</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
 
-        <div class="cards-grid">
-          <article
-            class="user-card"
-            *ngFor="let user of getUsersByRole(role); trackBy: trackByEmail"
-          >
-            <ng-container
-              *ngIf="role === 'docente' && user.photoURL; else initialsAvatar"
-            >
-              <img [src]="user.photoURL" class="user-avatar-image" />
-            </ng-container>
-            <ng-template #initialsAvatar>
-              <div class="avatar">{{ getInitials(user) }}</div>
-            </ng-template>
+        <tbody>
+          <tr *ngFor="let user of paginatedUsers; trackBy: trackByEmail">
+            <td>
+              <input
+                type="checkbox"
+                [checked]="isUserSelected(user)"
+                (change)="toggleSelectUser(user, $any($event.target).checked)"
+                aria-label="Seleccionar usuario"
+              />
+            </td>
+            <td>
+              <ng-container
+                *ngIf="
+                  normalizeRole(user.role) === 'docente' && user.photoURL;
+                  else tableInitialsAvatar
+                "
+              >
+                <img [src]="user.photoURL" class="table-avatar-image" />
+              </ng-container>
+              <ng-template #tableInitialsAvatar>
+                <div class="table-avatar">{{ getInitials(user) }}</div>
+              </ng-template>
+            </td>
 
-            <div class="user-data">
-              <h4>{{ getFullName(user) }}</h4>
-              <p>{{ getDisplayEmail(user) }}</p>
-
-              <small *ngIf="user.cedula">Cédula: {{ user.cedula }}</small>
-              <small *ngIf="user.degree">Título: {{ user.degree }}</small>
-              <small *ngIf="role === 'docente'">
-                {{
-                  user.description
-                    ? "Descripción cargada"
-                    : "Sin descripción cargada"
-                }}
-              </small>
-              <small *ngIf="user.pendingData?.subjectName">
-                Asignatura: {{ user.pendingData.subjectName }}
-              </small>
-
+            <td class="text-left">{{ getFullName(user) }}</td>
+            <td class="text-left">{{ getDisplayEmail(user) }}</td>
+            <td>{{ user.cedula || "-" }}</td>
+            <td>{{ getRoleLabel(normalizeRole(user.role)) }}</td>
+            <td>
               <span
                 class="status-badge"
                 [class.pending]="isNotRegistered(user)"
-                [class.registered]="user.status === 'registered'"
+                [class.registered]="isRegistered(user)"
               >
                 {{ getStatusLabel(user) }}
               </span>
-            </div>
-
-            <div
-              class="card-actions teacher-actions"
-              *ngIf="role === 'docente' && isRegistered(user)"
-            >
+            </td>
+            <td class="text-left">
+              <span *ngIf="user.degree">Título: {{ user.degree }}</span>
+              <span *ngIf="user.pendingData?.subjectName"
+                >Asignatura: {{ user.pendingData.subjectName }}</span
+              >
+              <span *ngIf="user.isPPL" class="ppl-badge">Estudiante PPL</span>
+              <span *ngIf="normalizeRole(user.role) === 'docente'">
+                {{
+                  user.description ? "Descripción cargada" : "Sin descripción"
+                }}
+              </span>
+            </td>
+            <td class="row-actions">
               <button
+                *ngIf="
+                  normalizeRole(user.role) === 'docente' && isRegistered(user)
+                "
                 type="button"
                 class="btn-edit-icon"
                 (click)="openTeacherEditModal(user)"
@@ -175,14 +221,120 @@
                   />
                 </svg>
               </button>
-            </div>
-          </article>
-        </div>
-      </section>
-    </ng-container>
+
+              <button
+                type="button"
+                class="btn-trash-icon"
+                (click)="deactivateUser(user)"
+                [disabled]="isDeactivatingUsers"
+                aria-label="Desactivar usuario"
+                title="Desactivar usuario"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M3 6H5H21"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M10 11V17"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M14 11V17"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div
+      class="pagination-bar"
+      *ngIf="!isLoadingAuthorized && filteredUsers.length > 0"
+    >
+      <div class="pagination-info">
+        Mostrando {{ startItem }}-{{ endItem }} de {{ filteredUsers.length }}
+        registros
+      </div>
+
+      <div class="pagination-controls">
+        <label for="pageSizeSelect">Filas</label>
+        <select
+          id="pageSizeSelect"
+          [(ngModel)]="pageSize"
+          (change)="onPageSizeChange()"
+        >
+          <option *ngFor="let size of pageSizeOptions" [ngValue]="size">
+            {{ size }}
+          </option>
+        </select>
+
+        <button
+          type="button"
+          class="page-btn"
+          (click)="goToPrevPage()"
+          [disabled]="currentPage === 1"
+        >
+          Anterior
+        </button>
+
+        <button
+          type="button"
+          class="page-btn"
+          *ngFor="let page of visiblePageNumbers"
+          [class.active]="page === currentPage"
+          (click)="goToPage(page)"
+        >
+          {{ page }}
+        </button>
+
+        <button
+          type="button"
+          class="page-btn"
+          (click)="goToNextPage()"
+          [disabled]="currentPage === totalPages"
+        >
+          Siguiente
+        </button>
+      </div>
+    </div>
   </ng-container>
 
   <ng-container *ngIf="mainView === 'materias'">
+    <div class="actions-row">
+      <button
+        type="button"
+        class="btn-primary-custom"
+        (click)="openCreateSubjectModal()"
+      >
+        Crear materia
+      </button>
+    </div>
+
     <div class="filters-panel">
       <div class="field grow">
         <label for="searchSubject">Buscar materia</label>
@@ -201,112 +353,223 @@
         No hay materias registradas.
       </div>
 
-      <div class="cards-grid" *ngIf="directoryItems.length > 0">
-        <article class="user-card" *ngFor="let item of directoryItems">
-          <div class="avatar">
-            {{ (item.name || "M").charAt(0) | uppercase }}
-          </div>
-
-          <div class="user-data">
-            <h4>{{ item.name || "Sin nombre" }}</h4>
-            <p class="subject-description">
+      <table class="simple-table" *ngIf="directoryItems.length > 0">
+        <thead>
+          <tr>
+            <th>Materia</th>
+            <th>Descripción</th>
+            <th>Preguntas</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of directoryItems">
+            <td class="text-left">{{ item.name || "Sin nombre" }}</td>
+            <td class="text-left">
               {{
                 item.description
                   ? "Descripción cargada"
                   : "Sin descripción cargada"
               }}
-            </p>
-            <span class="subject-badge">
-              {{ item.questions?.length || 0 }} preguntas
-            </span>
-          </div>
-
-          <div class="card-actions">
-            <button
-              type="button"
-              class="btn-edit"
-              (click)="openDirectoryEditModal(item)"
-            >
-              Editar
-            </button>
-          </div>
-        </article>
-      </div>
+            </td>
+            <td>{{ item.questions?.length || 0 }}</td>
+            <td>
+              <button
+                type="button"
+                class="btn-edit"
+                (click)="openDirectoryEditModal(item)"
+              >
+                Editar
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </ng-container>
   </ng-container>
 
   <ng-container *ngIf="mainView === 'cursos'">
-    <div class="filters-panel">
-      <div class="field grow">
-        <label for="searchCourse">Buscar curso</label>
-        <input
-          id="searchCourse"
-          type="text"
-          [(ngModel)]="courseSearchTerm"
-          (input)="searchCourses()"
-          placeholder="Asignatura, paralelo, modalidad, docente o ciclo"
-        />
-      </div>
-    </div>
-
     <ng-container *ngIf="coursesData$ | async as courses">
+      <div class="actions-row" *ngIf="courses.length > 0">
+        <button
+          type="button"
+          class="btn-primary-custom"
+          (click)="openCreateCourseModal()"
+        >
+          Crear curso
+        </button>
+
+        <button
+          type="button"
+          class="btn-danger-action"
+          (click)="deactivateSelectedCourses()"
+          [disabled]="selectedCoursesCount < 2 || isDeactivatingCourses"
+          *ngIf="selectedCoursesCount >= 2"
+        >
+          {{
+            isDeactivatingCourses
+              ? "Desactivando..."
+              : "Desactivar seleccionados"
+          }}
+        </button>
+
+        <span class="selection-counter" *ngIf="hasSelectedCourses">
+          {{ selectedCoursesCount }} seleccionado(s)
+        </span>
+      </div>
+
+      <div class="actions-row" *ngIf="courses.length === 0">
+        <button
+          type="button"
+          class="btn-primary-custom"
+          (click)="openCreateCourseModal()"
+        >
+          Crear curso
+        </button>
+      </div>
+
+      <div class="filters-panel">
+        <div class="field grow">
+          <label for="searchCourse">Buscar curso</label>
+          <input
+            id="searchCourse"
+            type="text"
+            [(ngModel)]="courseSearchTerm"
+            (input)="searchCourses()"
+            placeholder="Asignatura, paralelo, modalidad, docente o ciclo"
+          />
+        </div>
+      </div>
+
       <div *ngIf="courses.length === 0" class="state-card">
         No hay cursos registrados.
       </div>
 
-      <div class="cards-grid" *ngIf="courses.length > 0">
-        <article class="user-card" *ngFor="let course of courses">
-          <div class="avatar">
-            {{ (course.subjectName || "C").charAt(0) | uppercase }}
-          </div>
-
-          <div class="user-data">
-            <h4>{{ course.subjectName || "Sin asignatura" }}</h4>
-            <small>Paralelo: {{ course.parallel || "Sin paralelo" }}</small>
-            <small
-              >Modalidad:
-              {{ getModalityLabel(course.type || course.modality) }}</small
-            >
-            <small>Ciclo: {{ course.cycleName || "Sin ciclo" }}</small>
-            <small>Docente: {{ course.professorName || "Sin docente" }}</small>
-            <small *ngIf="course.professorEmail"
-              >Correo: {{ course.professorEmail }}</small
-            >
-          </div>
-
-          <div class="card-actions teacher-actions">
-            <button
-              type="button"
-              class="btn-edit-icon"
-              (click)="openCourseEditModal(course)"
-              aria-label="Editar curso"
-              title="Editar curso"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                aria-hidden="true"
+      <table class="simple-table" *ngIf="courses.length > 0">
+        <thead>
+          <tr>
+            <th>
+              <input
+                type="checkbox"
+                [checked]="allVisibleCoursesSelected(courses)"
+                (change)="
+                  toggleSelectAllVisibleCourses(
+                    courses,
+                    $any($event.target).checked
+                  )
+                "
+                aria-label="Seleccionar cursos visibles"
+              />
+            </th>
+            <th>Asignatura</th>
+            <th>Paralelo</th>
+            <th>Modalidad</th>
+            <th>Ciclo</th>
+            <th>Docente</th>
+            <th>Correo</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let course of courses">
+            <td>
+              <input
+                type="checkbox"
+                [checked]="isCourseSelected(course)"
+                (change)="
+                  toggleSelectCourse(course, $any($event.target).checked)
+                "
+                aria-label="Seleccionar curso"
+              />
+            </td>
+            <td class="text-left">
+              {{ course.subjectName || "Sin asignatura" }}
+            </td>
+            <td>{{ course.parallel || "Sin paralelo" }}</td>
+            <td>{{ getModalityLabel(course.type || course.modality) }}</td>
+            <td>{{ course.cycleName || "Sin ciclo" }}</td>
+            <td class="text-left">
+              {{ course.professorName || "Sin docente" }}
+            </td>
+            <td class="text-left">{{ course.professorEmail || "-" }}</td>
+            <td class="row-actions">
+              <button
+                type="button"
+                class="btn-edit-icon"
+                (click)="openCourseEditModal(course)"
+                aria-label="Editar curso"
+                title="Editar curso"
               >
-                <path
-                  d="M4 20H8L18.5 9.5C18.8978 9.10218 19.1214 8.56261 19.1214 8C19.1214 7.43739 18.8978 6.89782 18.5 6.5C18.1022 6.10218 17.5626 5.87857 17 5.87857C16.4374 5.87857 15.8978 6.10218 15.5 6.5L5 17V20H4Z"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-                <path
-                  d="M13.5 8.5L16.5 11.5"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </button>
-          </div>
-        </article>
-      </div>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M4 20H8L18.5 9.5C18.8978 9.10218 19.1214 8.56261 19.1214 8C19.1214 7.43739 18.8978 6.89782 18.5 6.5C18.1022 6.10218 17.5626 5.87857 17 5.87857C16.4374 5.87857 15.8978 6.10218 15.5 6.5L5 17V20H4Z"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M13.5 8.5L16.5 11.5"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
+
+              <button
+                type="button"
+                class="btn-trash-icon"
+                (click)="deactivateCourse(course)"
+                aria-label="Desactivar curso"
+                title="Desactivar curso"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M3 6H5H21"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M10 11V17"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M14 11V17"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </ng-container>
   </ng-container>
 
@@ -354,6 +617,16 @@
               [(ngModel)]="newUser.cedula"
               placeholder="Cédula de identidad"
             />
+          </div>
+
+          <div
+            class="input-group ppl-toggle"
+            *ngIf="selectedRoleForUpload === 'estudiante'"
+          >
+            <label>
+              <input type="checkbox" [(ngModel)]="newUser.isPPL" />
+              Estudiante PPL
+            </label>
           </div>
 
           <div *ngIf="selectedRoleForUpload === 'docente'" class="extra-fields">
@@ -644,6 +917,134 @@
             [disabled]="isSavingCourse"
           >
             {{ isSavingCourse ? "Guardando..." : "Guardar" }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" *ngIf="showCreateSubjectModal">
+    <div class="modal-content edit-modal">
+      <div class="modal-header">
+        <h3>Crear materia</h3>
+        <button class="close-btn" (click)="closeCreateSubjectModal()">
+          &times;
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="input-group">
+          <label>Nombre de la materia</label>
+          <input
+            type="text"
+            [(ngModel)]="newSubject.name"
+            placeholder="Ej: Derecho Constitucional"
+          />
+        </div>
+
+        <div class="input-group">
+          <label>Descripción</label>
+          <textarea
+            [(ngModel)]="newSubject.description"
+            placeholder="Descripción académica de la materia"
+          ></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="btn-secondary"
+            (click)="closeCreateSubjectModal()"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="btn-save-inline"
+            (click)="saveNewSubject()"
+            [disabled]="isCreatingSubject"
+          >
+            {{ isCreatingSubject ? "Guardando..." : "Guardar" }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" *ngIf="showCreateCourseModal">
+    <div class="modal-content edit-modal course-modal">
+      <div class="modal-header">
+        <h3>Crear curso</h3>
+        <button class="close-btn" (click)="closeCreateCourseModal()">
+          &times;
+        </button>
+      </div>
+
+      <div class="modal-body course-modal-body">
+        <div class="grid-form">
+          <div class="input-group">
+            <label>Asignatura</label>
+            <select [(ngModel)]="newCourse.subjectName">
+              <option value="" disabled>Selecciona una materia</option>
+              <option *ngFor="let item of subjectOptions" [value]="item.name">
+                {{ item.name }}
+              </option>
+            </select>
+          </div>
+
+          <div class="input-group">
+            <label>Paralelo</label>
+            <input
+              type="text"
+              [(ngModel)]="newCourse.parallel"
+              placeholder="Ej: A"
+            />
+          </div>
+        </div>
+
+        <div class="grid-form">
+          <div class="input-group">
+            <label>Modalidad</label>
+            <select [(ngModel)]="newCourse.type">
+              <option value="presencial">Presencial</option>
+              <option value="distancia">Distancia</option>
+            </select>
+          </div>
+
+          <div class="input-group">
+            <label>Docente asignado</label>
+            <select [(ngModel)]="newCourse.professorId">
+              <option value="">Sin docente asignado</option>
+              <option
+                *ngFor="let teacher of courseTeachers"
+                [value]="teacher.id"
+              >
+                {{ getTeacherDisplayLabel(teacher) }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <p class="sync-note">
+          El curso se registrará en el ciclo activo:
+          {{ activeCycleName || "Sin nombre" }}.
+        </p>
+
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="btn-secondary"
+            (click)="closeCreateCourseModal()"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="btn-save-inline"
+            (click)="saveNewCourse()"
+            [disabled]="isCreatingCourse"
+          >
+            {{ isCreatingCourse ? "Guardando..." : "Guardar" }}
           </button>
         </div>
       </div>

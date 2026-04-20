@@ -27,12 +27,118 @@ import DocumentReference = firebase.firestore.DocumentReference;
 })
 export class ConsultasService {
   private usersCollection: AngularFirestoreCollection<User>;
+
+  private pickBalancedRandomCandidate(
+    candidates: Array<{ id: string; data: any; ref: any; workload: number }>,
+  ): { id: string; data: any; ref: any; workload: number } {
+    const minWorkload = Math.min(
+      ...candidates.map((candidate) => candidate.workload),
+    );
+    const leastLoadedCandidates = candidates.filter(
+      (candidate) => candidate.workload === minWorkload,
+    );
+
+    const randomIndex = Math.floor(
+      Math.random() * leastLoadedCandidates.length,
+    );
+    return leastLoadedCandidates[randomIndex];
+  }
+
   constructor(
     private firestore: AngularFirestore,
     private storage: AngularFireStorage,
     private afAuth: AngularFireAuth,
   ) {
     this.usersCollection = firestore.collection<User>('users');
+  }
+
+  private normalizeTextToken(value: any): string {
+    return `${value || ''}`
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9\s]/g, ' ')
+      .trim()
+      .toUpperCase();
+  }
+
+  private getThesisTypePrefix(tipo: any): 'PRE' | 'POS' {
+    const normalized = `${tipo || ''}`.trim().toLowerCase();
+    return normalized === 'posgrado' ? 'POS' : 'PRE';
+  }
+
+  private getCycleBlock(ciclo: any): 'A' | 'B' {
+    const normalized = this.normalizeTextToken(ciclo).toLowerCase();
+
+    if (normalized.includes('abril') || normalized.includes('agosto')) {
+      return 'A';
+    }
+
+    if (normalized.includes('octubre') || normalized.includes('febrero')) {
+      return 'B';
+    }
+
+    return 'A';
+  }
+
+  private getSubjectToken(className: any): string {
+    const normalized = this.normalizeTextToken(className);
+    const chunks = normalized.split(/\s+/).filter(Boolean);
+
+    if (!chunks.length) {
+      return 'GENERAL';
+    }
+
+    if (chunks.length === 1) {
+      return chunks[0].slice(0, 6) || 'GENERAL';
+    }
+
+    const first = chunks[0].slice(0, 3);
+    const second = chunks[1].slice(0, 3);
+    const token = `${first}${second}`;
+
+    return token || chunks[0].slice(0, 6) || 'GENERAL';
+  }
+
+  private getParallelToken(parallel: any): string {
+    const normalized = this.normalizeTextToken(parallel).replace(/\s+/g, '');
+    return normalized || 'X';
+  }
+
+  private async generateThesisCode(tesisData: any): Promise<string> {
+    const prefix = this.getThesisTypePrefix(tesisData?.tipo);
+    const cycleBlock = this.getCycleBlock(tesisData?.ciclo);
+    const subjectToken = this.getSubjectToken(tesisData?.className);
+    const parallelToken = this.getParallelToken(tesisData?.classParallel);
+    const year = new Date().getFullYear();
+
+    const counterKey = `${prefix}-${year}-${cycleBlock}-${subjectToken}-${parallelToken}`;
+    const counterRef = this.firestore
+      .collection('thesisCodeCounters')
+      .doc(counterKey).ref;
+
+    const sequence = await this.firestore.firestore.runTransaction(
+      async (transaction) => {
+        const snapshot = await transaction.get(counterRef);
+        const current = snapshot.exists
+          ? Number((snapshot.data() as any)?.lastValue || 0)
+          : 0;
+
+        const next = current + 1;
+
+        transaction.set(
+          counterRef,
+          {
+            lastValue: next,
+            updatedAt: new Date(),
+          },
+          { merge: true },
+        );
+
+        return next;
+      },
+    );
+
+    return `${counterKey}-${String(sequence).padStart(4, '0')}`;
   }
 
   // Método para obtener las clases por modalidad, con nombre del profesor
@@ -44,7 +150,9 @@ export class ConsultasService {
     })[]
   > {
     return this.firestore
-      .collection<Class>('classes', (ref) => ref.where('type', '==', modality))
+      .collection<Class>('classes', (ref) =>
+        ref.where('type', '==', modality).where('isActive', '==', true),
+      )
       .valueChanges()
       .pipe(
         switchMap((classes) => {
@@ -82,7 +190,7 @@ export class ConsultasService {
     | null
   > {
     return this.firestore
-      .collection<Class>('classes')
+      .collection<Class>('classes', (ref) => ref.where('isActive', '==', true))
       .doc(classId)
       .valueChanges()
       .pipe(
@@ -120,7 +228,7 @@ export class ConsultasService {
     const normalizedCycleId = `${cycleId || ''}`.trim();
 
     return this.firestore
-      .collection<Class>('classes')
+      .collection<Class>('classes', (ref) => ref.where('isActive', '==', true))
       .snapshotChanges()
       .pipe(
         map((actions) =>
@@ -131,10 +239,10 @@ export class ConsultasService {
         ),
         map((classes: any[]) => {
           if (!normalizedCycleId) {
-            return classes;
+            return classes || [];
           }
 
-          return classes.filter((classItem: any) => {
+          return (classes || []).filter((classItem: any) => {
             const classCycleId =
               `${classItem?.cycleId || classItem?.cicleId || ''}`.trim();
             return classCycleId === normalizedCycleId;
@@ -269,12 +377,16 @@ export class ConsultasService {
   // Método para guardar un documento en la colección 'tesis'
   saveTesis(tesisData: any): Observable<string> {
     return new Observable<string>((observer) => {
-      this.firestore
-        .collection('tesis')
-        .add(tesisData)
-        .then((docRef) => {
-          observer.next(docRef.id); // Retorna el ID del documento creado
-          observer.complete();
+      this.generateThesisCode(tesisData)
+        .then((thesisCode) => {
+          const docRef = this.firestore.collection('tesis').doc();
+
+          return docRef
+            .set({ ...tesisData, thesisCode, isActive: true })
+            .then(() => {
+              observer.next(docRef.ref.id); // Retorna el ID del documento creado
+              observer.complete();
+            });
         })
         .catch((error) => {
           observer.error(error);
@@ -339,8 +451,11 @@ export class ConsultasService {
   // Obtener usuarios por rol
   getUserByRole(role: string): Observable<any> {
     return this.firestore
-      .collection('users', (ref) => ref.where('role', '==', role))
-      .valueChanges();
+      .collection('users', (ref) =>
+        ref.where('role', '==', role).where('isActive', '==', true),
+      )
+      .valueChanges()
+      .pipe(map((users: any[]) => users || []));
   }
 
   // Método para guardar un documento en la subcolección 'documents' de una tesis específica
@@ -392,7 +507,7 @@ export class ConsultasService {
 
     return this.firestore
       .collection('tesis', (ref) => {
-        let query: any = ref;
+        let query: any = ref.where('isActive', '==', true);
 
         switch (role) {
           case 'estudiante':
@@ -434,7 +549,7 @@ export class ConsultasService {
 
   getAllTesis(): Observable<any[]> {
     return this.firestore
-      .collection('tesis')
+      .collection('tesis', (ref) => ref.where('isActive', '==', true))
       .snapshotChanges()
       .pipe(
         map((actions) =>
@@ -457,6 +572,35 @@ export class ConsultasService {
     });
 
     return batch.commit();
+  }
+
+  async deactivateTesis(tesisIds: string[]): Promise<void> {
+    const normalizedIds = Array.from(
+      new Set(
+        (tesisIds || []).map((id) => `${id || ''}`.trim()).filter(Boolean),
+      ),
+    );
+
+    if (!normalizedIds.length) {
+      return;
+    }
+
+    const batch = this.firestore.firestore.batch();
+
+    normalizedIds.forEach((id) => {
+      const ref = this.firestore.collection('tesis').doc(id).ref;
+      batch.set(
+        ref,
+        {
+          isActive: false,
+          status: 'Desactivado',
+          updatedAt: new Date(),
+        },
+        { merge: true },
+      );
+    });
+
+    await batch.commit();
   }
 
   async addUser(userData: Partial<User>): Promise<void> {
@@ -537,6 +681,90 @@ export class ConsultasService {
     return value === true;
   }
 
+  private normalizeCycleToken(value: any): string {
+    return `${value || ''}`.trim().toLowerCase();
+  }
+
+  private thesisCountsForWorkload(
+    thesis: any,
+    cycleName?: string,
+    cycleId?: string,
+  ): boolean {
+    const normalizedCycleName = this.normalizeCycleToken(cycleName);
+    const normalizedCycleId = `${cycleId || ''}`.trim();
+
+    const thesisCycleName = this.normalizeCycleToken(thesis?.ciclo);
+    const thesisCycleId = `${thesis?.cycleId || thesis?.cicleId || ''}`.trim();
+    const thesisStatus = `${thesis?.status || ''}`.trim().toLowerCase();
+    const thesisIsActive = thesis?.isActive !== false;
+
+    const hasCycleFilter = !!normalizedCycleName || !!normalizedCycleId;
+    let matchesCycle = true;
+
+    if (hasCycleFilter) {
+      const matchesByName = normalizedCycleName
+        ? thesisCycleName === normalizedCycleName
+        : false;
+      const matchesById = normalizedCycleId
+        ? thesisCycleId === normalizedCycleId
+        : false;
+      matchesCycle = matchesByName || matchesById;
+    }
+
+    return (
+      matchesCycle &&
+      thesisIsActive &&
+      thesisStatus !== 'rechazado' &&
+      thesisStatus !== 'desactivado'
+    );
+  }
+
+  private async getEligibleStaffForCycle(
+    role: 'director' | 'evaluador',
+    maxLoad: number,
+    cycleName?: string,
+    cycleId?: string,
+  ): Promise<Array<{ id: string; data: any; ref: any; workload: number }>> {
+    const staffSnapshot = await this.firestore
+      .collection('users', (ref) =>
+        ref.where('role', '==', role).where('isActive', '==', true),
+      )
+      .get()
+      .toPromise();
+
+    const staffDocs = staffSnapshot?.docs || [];
+
+    if (!staffDocs.length) {
+      return [];
+    }
+
+    const workloads = await Promise.all(
+      staffDocs.map(async (doc) => {
+        const roleField = role === 'director' ? 'directorId' : 'evaluatorId';
+
+        const thesesSnap = await this.firestore
+          .collection('tesis', (ref) =>
+            ref.where(roleField, '==', doc.id).where('isActive', '==', true),
+          )
+          .get()
+          .toPromise();
+
+        const activeCount = (thesesSnap?.docs || []).filter((item) =>
+          this.thesisCountsForWorkload(item.data(), cycleName, cycleId),
+        ).length;
+
+        return {
+          id: doc.id,
+          data: doc.data() as any,
+          ref: doc.ref,
+          workload: activeCount,
+        };
+      }),
+    );
+
+    return workloads.filter((staff) => staff.workload < maxLoad);
+  }
+
   async assignRandomStaff(
     thesisId: string,
     role: string,
@@ -547,7 +775,10 @@ export class ConsultasService {
       // 1. Fetch all available staff with the specific role under the load limit
       const staffSnapshot = await this.firestore
         .collection('users', (ref) =>
-          ref.where('role', '==', role).where('currentLoad', '<', maxLoad),
+          ref
+            .where('role', '==', role)
+            .where('isActive', '==', true)
+            .where('currentLoad', '<', maxLoad),
         )
         .get()
         .toPromise();
@@ -625,47 +856,62 @@ export class ConsultasService {
     const batch = this.firestore.firestore.batch();
 
     try {
-      // 1. Consultas con logs de depuración
-      const dirRef = this.firestore.collection('users', (ref) =>
-        ref.where('role', '==', 'director').where('currentLoad', '<', 3),
-      );
-      const evRef = this.firestore.collection('users', (ref) =>
-        ref.where('role', '==', 'evaluador').where('currentLoad', '<', 3),
-      );
+      if (tesisData?.isPPL === true) {
+        throw new Error(
+          'El estudiante PPL requiere asignación manual de director.',
+        );
+      }
 
-      const [dirSnap, evSnap] = await Promise.all([
-        dirRef.get().toPromise(),
-        evRef.get().toPromise(),
+      const cycleName = `${tesisData?.ciclo || ''}`.trim();
+      const cycleId =
+        `${tesisData?.cycleId || tesisData?.cicleId || ''}`.trim();
+
+      // 1. Buscar disponibilidad por carga real del ciclo activo
+      const [availableDirectors, availableEvaluators] = await Promise.all([
+        this.getEligibleStaffForCycle('director', 3, cycleName, cycleId),
+        this.getEligibleStaffForCycle('evaluador', 3, cycleName, cycleId),
       ]);
 
       console.log('--- DEPURACIÓN DE ASIGNACIÓN ---');
-      console.log('Directores encontrados:', dirSnap?.docs.length || 0);
-      console.log('Evaluadores encontrados:', evSnap?.docs.length || 0);
+      console.log(
+        'Directores disponibles en ciclo:',
+        availableDirectors.length,
+      );
+      console.log(
+        'Evaluadores disponibles en ciclo:',
+        availableEvaluators.length,
+      );
 
       // 2. Validación detallada
-      if (!dirSnap || dirSnap.empty) {
+      if (!availableDirectors.length) {
         throw new Error(
-          'No se encontraron usuarios con role "director" y currentLoad < 3',
+          'No se encontraron directores disponibles para el ciclo activo (carga < 3).',
         );
       }
-      if (!evSnap || evSnap.empty) {
+      if (!availableEvaluators.length) {
         throw new Error(
-          'No se encontraron usuarios con role "evaluador" y currentLoad < 3',
+          'No se encontraron evaluadores disponibles para el ciclo activo (carga < 3).',
         );
       }
 
-      // 3. Selección (Para pruebas tomamos el primero disponible)
-      const randomDirDoc = dirSnap.docs[0];
-      const randomEvDoc = evSnap.docs[0];
+      // 3. Selección balanceada: menor carga y sorteo solo en empate
+      const randomDirDoc = this.pickBalancedRandomCandidate(availableDirectors);
+      const randomEvDoc = this.pickBalancedRandomCandidate(availableEvaluators);
 
-      const dirData = randomDirDoc.data() as any;
-      const evData = randomEvDoc.data() as any;
+      console.log('Director asignado (carga ciclo):', randomDirDoc.workload);
+      console.log('Evaluador asignado (carga ciclo):', randomEvDoc.workload);
+
+      const dirData = randomDirDoc.data;
+      const evData = randomEvDoc.data;
+      const thesisCode = await this.generateThesisCode(tesisData);
 
       // 4. Preparar documento de tesis
       const tesisRef = this.firestore.collection('tesis').doc().ref;
 
       const finalData = {
         ...tesisData,
+        thesisCode,
+        isActive: true,
         directorId: randomDirDoc.id,
         directorName: `${dirData.firstName} ${dirData.lastName}`,
         directorEmail: dirData.email,
@@ -755,7 +1001,9 @@ export class ConsultasService {
 
     return this.firestore
       .collection('users', (ref) =>
-        ref.where('role', 'in', ['director', 'evaluador']),
+        ref
+          .where('role', 'in', ['director', 'evaluador'])
+          .where('isActive', '==', true),
       )
       .valueChanges({ idField: 'id' })
       .pipe(
@@ -779,32 +1027,13 @@ export class ConsultasService {
               .pipe(
                 take(1),
                 map((theses: any[]) => {
-                  const filteredTheses = (theses || []).filter((thesis) => {
-                    const thesisCycleName = `${thesis?.ciclo || ''}`
-                      .trim()
-                      .toLowerCase();
-                    const thesisCycleId =
-                      `${thesis?.cycleId || thesis?.cicleId || ''}`.trim();
-                    const thesisStatus = `${thesis?.status || ''}`
-                      .trim()
-                      .toLowerCase();
-
-                    const hasCycleFilter =
-                      !!normalizedCycleName || !!normalizedCycleId;
-
-                    let matchesCycle = true;
-                    if (hasCycleFilter) {
-                      const matchesByName = normalizedCycleName
-                        ? thesisCycleName === normalizedCycleName
-                        : false;
-                      const matchesById = normalizedCycleId
-                        ? thesisCycleId === normalizedCycleId
-                        : false;
-                      matchesCycle = matchesByName || matchesById;
-                    }
-
-                    return matchesCycle && thesisStatus !== 'rechazado';
-                  });
+                  const filteredTheses = (theses || []).filter((thesis) =>
+                    this.thesisCountsForWorkload(
+                      thesis,
+                      normalizedCycleName,
+                      normalizedCycleId,
+                    ),
+                  );
 
                   return {
                     ...staffMember,
