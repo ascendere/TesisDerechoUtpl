@@ -86,3 +86,33 @@ input[type="number"] {
   font-style: italic;
   background: #f0f0f0;
 }
+
+.download-btn {
+  background-color: #28a745; /* Verde institucional para documentos/descargas */
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 14px;
+  font-family: Arial, sans-serif;
+  font-weight: bold;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px; /* Separación perfecta entre el emoji 📥 y el texto */
+  transition: background-color 0.15s ease-in-out;
+}
+
+/* Efecto al pasar el cursor por encima */
+.download-btn:hover {
+  background-color: #218838;
+}
+
+/* Estado deshabilitado cuando la rúbrica se está guardando (Evita distorsiones y clics dobles) */
+.download-btn:disabled {
+  background-color: #e0e0e0 !important;
+  color: #a0a0a0 !important;
+  cursor: not-allowed;
+  opacity: 0.8;
+}

@@ -4,14 +4,17 @@
       <button class="back-btn" type="button" (click)="goBack()">
         ← Regresar
       </button>
+      <button class="download-btn" type="button" (click)="descargarPdfDesdeUrl()" [disabled]="cargandoPdf">
+        Descargar Rúbrica (PDF)
+      </button>
     </div>
     <h2>Rúbrica de Calificación</h2>
     <p style="text-align: center">
       Fecha de Actualización:
       {{
-        fechaActualizacion
-          ? (fechaActualizacion | date: "dd/MM/yyyy HH:mm")
-          : "No disponible"
+      fechaActualizacion
+      ? (fechaActualizacion | date: "dd/MM/yyyy HH:mm")
+      : "No disponible"
       }}
     </p>
     <table>
@@ -34,14 +37,8 @@
           </td>
           <td>0.6</td>
           <td *ngIf="esDirector">
-            <input
-              type="number"
-              step="0.1"
-              [min]="0"
-              [max]="0.6"
-              [value]="rubricaLocal.prelim_portada || 0"
-              (input)="validarLocal($event, 0.6, 'prelim_portada')"
-            />
+            <input type="number" step="0.1" [min]="0" [max]="0.6" [value]="rubricaLocal.prelim_portada || 0"
+              (input)="validarLocal($event, 0.6, 'prelim_portada')" />
           </td>
           <td>{{ rubricaLocal.prelim_portada || "-" }}</td>
         </tr>
@@ -55,14 +52,8 @@
           </td>
           <td>0.6</td>
           <td *ngIf="esDirector">
-            <input
-              [min]="0"
-              [max]="0.6"
-              step="0.1"
-              type="number"
-              [value]="rubricaLocal.prelim_resumen || 0"
-              (input)="validarLocal($event, 0.6, 'prelim_resumen')"
-            />
+            <input [min]="0" [max]="0.6" step="0.1" type="number" [value]="rubricaLocal.prelim_resumen || 0"
+              (input)="validarLocal($event, 0.6, 'prelim_resumen')" />
           </td>
           <td>{{ rubricaLocal.prelim_resumen || "-" }}</td>
         </tr>
@@ -73,15 +64,9 @@
           </td>
           <td>0.3</td>
           <td *ngIf="esDirector">
-            <input
-              *ngIf="esDirector"
-              type="number"
-              step="0.1"
-              [min]="0"
-              [max]="0.3"
+            <input *ngIf="esDirector" type="number" step="0.1" [min]="0" [max]="0.3"
               [value]="rubricaLocal.prelim_congruencia || 0"
-              (input)="validarLocal($event, 0.3, 'prelim_congruencia')"
-            />
+              (input)="validarLocal($event, 0.3, 'prelim_congruencia')" />
           </td>
           <td>{{ rubricaLocal.prelim_congruencia || "-" }}</td>
         </tr>
@@ -93,15 +78,9 @@
           </td>
           <td>0.2</td>
           <td *ngIf="esDirector">
-            <input
-              *ngIf="esDirector"
-              type="number"
-              step="0.1"
-              [min]="0"
-              [max]="0.2"
+            <input *ngIf="esDirector" type="number" step="0.1" [min]="0" [max]="0.2"
               [value]="rubricaLocal.intro_caracterizacion || 0"
-              (input)="validarLocal($event, 0.2, 'intro_caracterizacion')"
-            />
+              (input)="validarLocal($event, 0.2, 'intro_caracterizacion')" />
           </td>
           <td>{{ rubricaLocal.intro_caracterizacion || "-" }}</td>
         </tr>
@@ -112,15 +91,8 @@
           </td>
           <td>0.2</td>
           <td *ngIf="esDirector">
-            <input
-              *ngIf="esDirector"
-              type="number"
-              step="0.1"
-              [min]="0"
-              [max]="0.2"
-              [value]="rubricaLocal.intro_referencia || 0"
-              (input)="validarLocal($event, 0.2, 'intro_referencia')"
-            />
+            <input *ngIf="esDirector" type="number" step="0.1" [min]="0" [max]="0.2"
+              [value]="rubricaLocal.intro_referencia || 0" (input)="validarLocal($event, 0.2, 'intro_referencia')" />
           </td>
           <td>{{ rubricaLocal.intro_referencia || "-" }}</td>
         </tr>
@@ -132,15 +104,8 @@
           </td>
           <td>0.2</td>
           <td *ngIf="esDirector">
-            <input
-              *ngIf="esDirector"
-              type="number"
-              step="0.1"
-              [min]="0"
-              [max]="0.2"
-              [value]="rubricaLocal.intro_contenidos || 0"
-              (input)="validarLocal($event, 0.2, 'intro_contenidos')"
-            />
+            <input *ngIf="esDirector" type="number" step="0.1" [min]="0" [max]="0.2"
+              [value]="rubricaLocal.intro_contenidos || 0" (input)="validarLocal($event, 0.2, 'intro_contenidos')" />
           </td>
           <td>{{ rubricaLocal.intro_contenidos || "-" }}</td>
         </tr>
@@ -153,15 +118,8 @@
           </td>
           <td>0.4</td>
           <td *ngIf="esDirector">
-            <input
-              *ngIf="esDirector"
-              type="number"
-              step="0.1"
-              [min]="0"
-              [max]="0.4"
-              [value]="rubricaLocal.intro_respuesta || 0"
-              (input)="validarLocal($event, 0.4, 'intro_respuesta')"
-            />
+            <input *ngIf="esDirector" type="number" step="0.1" [min]="0" [max]="0.4"
+              [value]="rubricaLocal.intro_respuesta || 0" (input)="validarLocal($event, 0.4, 'intro_respuesta')" />
           </td>
           <td>{{ rubricaLocal.intro_respuesta || "-" }}</td>
         </tr>
@@ -173,15 +131,9 @@
           </td>
           <td>0.25</td>
           <td *ngIf="esDirector">
-            <input
-              *ngIf="esDirector"
-              type="number"
-              step="0.1"
-              [min]="0"
-              [max]="0.25"
+            <input *ngIf="esDirector" type="number" step="0.1" [min]="0" [max]="0.25"
               [value]="rubricaLocal.marco_teorico_relacion || 0"
-              (input)="validarLocal($event, 0.25, 'marco_teorico_relacion')"
-            />
+              (input)="validarLocal($event, 0.25, 'marco_teorico_relacion')" />
           </td>
           <td>{{ rubricaLocal.marco_teorico_relacion || "-" }}</td>
         </tr>
@@ -192,15 +144,8 @@
           </td>
           <td>0.25</td>
           <td *ngIf="esDirector">
-            <input
-              *ngIf="esDirector"
-              type="number"
-              step="0.1"
-              [min]="0"
-              [max]="0.25"
-              [value]="rubricaLocal.prelim_fuentes || 0"
-              (input)="validarLocal($event, 0.25, 'prelim_fuentes')"
-            />
+            <input *ngIf="esDirector" type="number" step="0.1" [min]="0" [max]="0.25"
+              [value]="rubricaLocal.prelim_fuentes || 0" (input)="validarLocal($event, 0.25, 'prelim_fuentes')" />
           </td>
           <td>{{ rubricaLocal.prelim_fuentes || "-" }}</td>
         </tr>
@@ -211,15 +156,9 @@
           </td>
           <td>0.5</td>
           <td *ngIf="esDirector">
-            <input
-              *ngIf="esDirector"
-              type="number"
-              step="0.1"
-              [min]="0"
-              [max]="0.5"
+            <input *ngIf="esDirector" type="number" step="0.1" [min]="0" [max]="0.5"
               [value]="rubricaLocal.marco_teorico_analisis || 0"
-              (input)="validarLocal($event, 0.5, 'marco_teorico_analisis')"
-            />
+              (input)="validarLocal($event, 0.5, 'marco_teorico_analisis')" />
           </td>
           <td>{{ rubricaLocal.marco_teorico_analisis || "-" }}</td>
         </tr>
@@ -231,15 +170,9 @@
           </td>
           <td>0.25</td>
           <td *ngIf="esDirector">
-            <input
-              *ngIf="esDirector"
-              type="number"
-              step="0.1"
-              [min]="0"
-              [max]="0.25"
+            <input *ngIf="esDirector" type="number" step="0.1" [min]="0" [max]="0.25"
               [value]="rubricaLocal.metodologia_desarrollo || 0"
-              (input)="validarLocal($event, 0.25, 'metodologia_desarrollo')"
-            />
+              (input)="validarLocal($event, 0.25, 'metodologia_desarrollo')" />
           </td>
           <td>{{ rubricaLocal.metodologia_desarrollo || "-" }}</td>
         </tr>
@@ -250,15 +183,9 @@
           </td>
           <td>0.25</td>
           <td *ngIf="esDirector">
-            <input
-              *ngIf="esDirector"
-              type="number"
-              step="0.1"
-              [min]="0"
-              [max]="0.25"
+            <input *ngIf="esDirector" type="number" step="0.1" [min]="0" [max]="0.25"
               [value]="rubricaLocal.metodologia_planteamiento || 0"
-              (input)="validarLocal($event, 0.25, 'metodologia_planteamiento')"
-            />
+              (input)="validarLocal($event, 0.25, 'metodologia_planteamiento')" />
           </td>
           <td>{{ rubricaLocal.metodologia_planteamiento || "-" }}</td>
         </tr>
@@ -270,15 +197,9 @@
           </td>
           <td>0.5</td>
           <td *ngIf="esDirector">
-            <input
-              *ngIf="esDirector"
-              type="number"
-              step="0.1"
-              [min]="0"
-              [max]="0.5"
+            <input *ngIf="esDirector" type="number" step="0.1" [min]="0" [max]="0.5"
               [value]="rubricaLocal.metodologia_descripcion || 0"
-              (input)="validarLocal($event, 0.5, 'metodologia_descripcion')"
-            />
+              (input)="validarLocal($event, 0.5, 'metodologia_descripcion')" />
           </td>
           <td>{{ rubricaLocal.metodologia_descripcion || "-" }}</td>
         </tr>
@@ -291,15 +212,8 @@
           </td>
           <td>0.2</td>
           <td *ngIf="esDirector">
-            <input
-              *ngIf="esDirector"
-              type="number"
-              step="0.1"
-              [min]="0"
-              [max]="0.2"
-              [value]="rubricaLocal.resultados_tablas || 0"
-              (input)="validarLocal($event, 0.2, 'resultados_tablas')"
-            />
+            <input *ngIf="esDirector" type="number" step="0.1" [min]="0" [max]="0.2"
+              [value]="rubricaLocal.resultados_tablas || 0" (input)="validarLocal($event, 0.2, 'resultados_tablas')" />
           </td>
           <td>{{ rubricaLocal.resultados_tablas || "-" }}</td>
         </tr>
@@ -309,15 +223,9 @@
           </td>
           <td>0.3</td>
           <td *ngIf="esDirector">
-            <input
-              *ngIf="esDirector"
-              type="number"
-              step="0.1"
-              [min]="0"
-              [max]="0.3"
+            <input *ngIf="esDirector" type="number" step="0.1" [min]="0" [max]="0.3"
               [value]="rubricaLocal.resultados_analisis || 0"
-              (input)="validarLocal($event, 0.3, 'resultados_analisis')"
-            />
+              (input)="validarLocal($event, 0.3, 'resultados_analisis')" />
           </td>
           <td>{{ rubricaLocal.resultados_analisis || "-" }}</td>
         </tr>
@@ -325,15 +233,9 @@
           <td>Responden los resultados obtenidos a los objetivos planteados</td>
           <td>0.5</td>
           <td *ngIf="esDirector">
-            <input
-              *ngIf="esDirector"
-              type="number"
-              step="0.1"
-              [min]="0"
-              [max]="0.5"
+            <input *ngIf="esDirector" type="number" step="0.1" [min]="0" [max]="0.5"
               [value]="rubricaLocal.resultados_objetivos || 0"
-              (input)="validarLocal($event, 0.5, 'resultados_objetivos')"
-            />
+              (input)="validarLocal($event, 0.5, 'resultados_objetivos')" />
           </td>
           <td>{{ rubricaLocal.resultados_objetivos || "-" }}</td>
         </tr>
@@ -344,15 +246,9 @@
           </td>
           <td>0.5</td>
           <td *ngIf="esDirector">
-            <input
-              *ngIf="esDirector"
-              type="number"
-              step="0.1"
-              [min]="0"
-              [max]="0.5"
+            <input *ngIf="esDirector" type="number" step="0.1" [min]="0" [max]="0.5"
               [value]="rubricaLocal.resultados_confronta || 0"
-              (input)="validarLocal($event, 0.5, 'resultados_confronta')"
-            />
+              (input)="validarLocal($event, 0.5, 'resultados_confronta')" />
           </td>
           <td>{{ rubricaLocal.resultados_confronta || "-" }}</td>
         </tr>
@@ -363,15 +259,9 @@
           </td>
           <td>0.5</td>
           <td *ngIf="esDirector">
-            <input
-              *ngIf="esDirector"
-              type="number"
-              step="0.1"
-              [min]="0"
-              [max]="0.5"
+            <input *ngIf="esDirector" type="number" step="0.1" [min]="0" [max]="0.5"
               [value]="rubricaLocal.resultados_contraste || 0"
-              (input)="validarLocal($event, 0.5, 'resultados_contraste')"
-            />
+              (input)="validarLocal($event, 0.5, 'resultados_contraste')" />
           </td>
           <td>{{ rubricaLocal.resultados_contraste || "-" }}</td>
         </tr>
@@ -382,15 +272,8 @@
           </td>
           <td>0.5</td>
           <td *ngIf="esDirector">
-            <input
-              *ngIf="esDirector"
-              type="number"
-              step="0.1"
-              [min]="0"
-              [max]="0.5"
-              [value]="rubricaLocal.resultados_aporte || 0"
-              (input)="validarLocal($event, 0.5, 'resultados_aporte')"
-            />
+            <input *ngIf="esDirector" type="number" step="0.1" [min]="0" [max]="0.5"
+              [value]="rubricaLocal.resultados_aporte || 0" (input)="validarLocal($event, 0.5, 'resultados_aporte')" />
           </td>
           <td>{{ rubricaLocal.resultados_aporte || "-" }}</td>
         </tr>
@@ -399,15 +282,9 @@
           <td>Responden las concusiones a los objetivos del estudio.</td>
           <td>0.5</td>
           <td *ngIf="esDirector">
-            <input
-              *ngIf="esDirector"
-              type="number"
-              step="0.1"
-              [min]="0"
-              [max]="0.5"
+            <input *ngIf="esDirector" type="number" step="0.1" [min]="0" [max]="0.5"
               [value]="rubricaLocal.conclusiones_responden || 0"
-              (input)="validarLocal($event, 0.5, 'conclusiones_responden')"
-            />
+              (input)="validarLocal($event, 0.5, 'conclusiones_responden')" />
           </td>
           <td>{{ rubricaLocal.conclusiones_responden || "-" }}</td>
         </tr>
@@ -418,15 +295,9 @@
           </td>
           <td>0.5</td>
           <td *ngIf="esDirector">
-            <input
-              *ngIf="esDirector"
-              type="number"
-              step="0.1"
-              [min]="0"
-              [max]="0.5"
+            <input *ngIf="esDirector" type="number" step="0.1" [min]="0" [max]="0.5"
               [value]="rubricaLocal.conclusiones_precisas || 0"
-              (input)="validarLocal($event, 0.5, 'conclusiones_precisas')"
-            />
+              (input)="validarLocal($event, 0.5, 'conclusiones_precisas')" />
           </td>
           <td>{{ rubricaLocal.conclusiones_precisas || "-" }}</td>
         </tr>
@@ -435,15 +306,9 @@
           <td>Plantea las recomendaciones en función de las conclusiones.</td>
           <td>1</td>
           <td *ngIf="esDirector">
-            <input
-              *ngIf="esDirector"
-              type="number"
-              step="0.1"
-              [min]="0"
-              [max]="1"
+            <input *ngIf="esDirector" type="number" step="0.1" [min]="0" [max]="1"
               [value]="rubricaLocal.recomendaciones_funcion || 0"
-              (input)="validarLocal($event, 1, 'recomendaciones_funcion')"
-            />
+              (input)="validarLocal($event, 1, 'recomendaciones_funcion')" />
           </td>
           <td>{{ rubricaLocal.recomendaciones_funcion || "-" }}</td>
         </tr>
@@ -452,15 +317,9 @@
           <td>Utiliza bibliografía actualizada</td>
           <td>0.25</td>
           <td *ngIf="esDirector">
-            <input
-              *ngIf="esDirector"
-              type="number"
-              step="0.1"
-              [min]="0"
-              [max]="0.25"
+            <input *ngIf="esDirector" type="number" step="0.1" [min]="0" [max]="0.25"
               [value]="rubricaLocal.referencias_actualizada || 0"
-              (input)="validarLocal($event, 0.25, 'referencias_actualizada')"
-            />
+              (input)="validarLocal($event, 0.25, 'referencias_actualizada')" />
           </td>
           <td>{{ rubricaLocal.referencias_actualizada || "-" }}</td>
         </tr>
@@ -468,15 +327,8 @@
           <td>Presenta en orden alfabeto utilizando las normes APA.</td>
           <td>0.25</td>
           <td *ngIf="esDirector">
-            <input
-              *ngIf="esDirector"
-              type="number"
-              step="0.1"
-              [min]="0"
-              [max]="0.25"
-              [value]="rubricaLocal.referencias_orden || 0"
-              (input)="validarLocal($event, 0.25, 'referencias_orden')"
-            />
+            <input *ngIf="esDirector" type="number" step="0.1" [min]="0" [max]="0.25"
+              [value]="rubricaLocal.referencias_orden || 0" (input)="validarLocal($event, 0.25, 'referencias_orden')" />
           </td>
           <td>{{ rubricaLocal.referencias_orden || "-" }}</td>
         </tr>

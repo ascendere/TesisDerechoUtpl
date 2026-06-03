@@ -1,22 +1,26 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild, ElementRef } from '@angular/core';
 import { OnInit } from '@angular/core';
 import { Location } from '@angular/common';
 import { RubricaService } from '../../services/rubrica.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ConsultasService } from '../../services/consultas.service';
 import { LoginService } from '../../services/login.service';
+import { RubricaPdfService } from '../../services/rubrica-pdf.service';
 @Component({
   selector: 'app-rubrica',
   templateUrl: './rubrica.component.html',
   styleUrls: ['./rubrica.component.css'],
 })
 export class RubricaComponent implements OnInit {
+  @ViewChild('rubricaContainer', { static: false })
+  rubricaContainer!: ElementRef;
   tesisId: string = '';
   // Objeto local para no disparar escrituras constantes
   rubricaLocal: any = {};
   tesisData: any;
   userRole: string = '';
   esDirector: boolean = false;
+  cargandoPdf: boolean = false;
   constructor(
     private route: ActivatedRoute,
     private rubricaService: RubricaService,
@@ -24,6 +28,7 @@ export class RubricaComponent implements OnInit {
     private router: Router,
     private loginService: LoginService,
     private location: Location,
+    private pdfService: RubricaPdfService,
   ) {}
 
   ngOnInit() {
@@ -73,19 +78,79 @@ export class RubricaComponent implements OnInit {
   // UNA SOLA ESCRITURA PARA TODO EL OBJETO
   guardarTodo() {
     if (!this.tesisId) {
-      alert('No se pudo guardar la rúbrica: tesis no identificada.');
+      alert('Error: Identificador de tesis no válido.');
       return;
     }
 
+    this.cargandoPdf = true;
+
+    // 1. Persistencia de las notas en la base de datos
     this.rubricaService
       .guardarRubricaCompleta(this.tesisId, this.rubricaLocal)
-      .then(() => {
-        alert('Rúbrica actualizada');
+      .then(async () => {
+        if (this.esDirector) {
+          try {
+            // 💡 SOLUCIÓN A LA DISTORSIÓN: Ya no tocamos "nativeElement.classList"
+            // El documento se procesa en segundo plano directo desde los datos en memoria
+            const docPdf = this.pdfService.generarPdfNativo(
+              this.rubricaLocal,
+              this.total,
+            );
+
+            // Subida inmediata del binario generado a Firebase
+            const urlFinal = await this.pdfService.guardarPdfEnFirebase(
+              this.tesisId,
+              docPdf,
+            );
+            console.log(
+              'PDF oficial archivado correctamente en Storage:',
+              urlFinal,
+            );
+
+            alert(
+              'Calificaciones almacenadas y reporte de rúbrica guardado correctamente.',
+            );
+          } catch (error) {
+            console.error('Error durante la generación del PDF nativo:', error);
+            alert(
+              'Las notas se actualizaron, pero ocurrió un problema al compilar el PDF oficial.',
+            );
+          }
+        } else {
+          alert('Rúbrica actualizada correctamente.');
+        }
+      })
+      .catch((err) => {
+        console.error('Error al persistir cambios en la rúbrica:', err);
+      })
+      .finally(() => {
+        this.cargandoPdf = false;
         this.router.navigate(['/flujo'], {
           queryParams: { tesisId: this.tesisId },
         });
-      })
-      .catch((err) => console.error(err));
+      });
+  }
+
+  // Función auxiliar para centralizar la redirección limpia
+  private finalizarFlujo() {
+    this.cargandoPdf = false;
+    this.router.navigate(['/flujo'], {
+      queryParams: { tesisId: this.tesisId },
+    });
+  }
+
+  descargarPdfDesdeUrl() {
+    // Si los datos de la tesis ya fueron leídos en cargarDatos() y contienen la url:
+    const urlPdf = this.tesisData?.urlPdfRubrica;
+
+    if (urlPdf) {
+      // Abre el PDF guardado en una pestaña nueva o fuerza la descarga nativa del navegador
+      window.open(urlPdf, '_blank');
+    } else {
+      alert(
+        'Aún no se ha generado una versión final en PDF para esta rúbrica.',
+      );
+    }
   }
 
   goBack() {
