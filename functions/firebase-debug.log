@@ -1,0 +1,165 @@
+[debug] [2026-06-04T19:05:44.026Z] ----------------------------------------------------------------------
+[debug] [2026-06-04T19:05:44.030Z] Command:       /Users/macbookair/.nvm/versions/node/v24.13.0/bin/node /Users/macbookair/.nvm/versions/node/v24.13.0/bin/firebase deploy --only functions:descargarRubricaZip --debug
+[debug] [2026-06-04T19:05:44.031Z] CLI Version:   15.4.0
+[debug] [2026-06-04T19:05:44.031Z] Platform:      darwin
+[debug] [2026-06-04T19:05:44.031Z] Node Version:  v24.13.0
+[debug] [2026-06-04T19:05:44.031Z] Time:          Thu Jun 04 2026 14:05:44 GMT-0500 (Ecuador Time)
+[debug] [2026-06-04T19:05:44.031Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-06-04T19:05:49.235Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-06-04T19:05:49.238Z] > authorizing via signed-in user (porkevin743@gmail.com)
+[debug] [2026-06-04T19:05:49.239Z] [iam] checking project tesisderechoutpl for permissions ["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]
+[debug] [2026-06-04T19:05:49.244Z] Checked if tokens are valid: true, expires at: 1780603339470
+[debug] [2026-06-04T19:05:49.245Z] Checked if tokens are valid: true, expires at: 1780603339470
+[debug] [2026-06-04T19:05:49.252Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/tesisderechoutpl:testIamPermissions [none]
+[debug] [2026-06-04T19:05:49.253Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/tesisderechoutpl:testIamPermissions x-goog-quota-user=projects/tesisderechoutpl
+[debug] [2026-06-04T19:05:49.255Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/tesisderechoutpl:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[debug] [2026-06-04T19:05:49.745Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/tesisderechoutpl:testIamPermissions 200
+[debug] [2026-06-04T19:05:49.745Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/tesisderechoutpl:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[debug] [2026-06-04T19:05:49.746Z] Checked if tokens are valid: true, expires at: 1780603339470
+[debug] [2026-06-04T19:05:49.746Z] Checked if tokens are valid: true, expires at: 1780603339470
+[debug] [2026-06-04T19:05:49.747Z] >>> [apiv2][query] POST https://iam.googleapis.com/v1/projects/tesisderechoutpl/serviceAccounts/tesisderechoutpl@appspot.gserviceaccount.com:testIamPermissions [none]
+[debug] [2026-06-04T19:05:49.747Z] >>> [apiv2][body] POST https://iam.googleapis.com/v1/projects/tesisderechoutpl/serviceAccounts/tesisderechoutpl@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[debug] [2026-06-04T19:05:50.419Z] <<< [apiv2][status] POST https://iam.googleapis.com/v1/projects/tesisderechoutpl/serviceAccounts/tesisderechoutpl@appspot.gserviceaccount.com:testIamPermissions 200
+[debug] [2026-06-04T19:05:50.419Z] <<< [apiv2][body] POST https://iam.googleapis.com/v1/projects/tesisderechoutpl/serviceAccounts/tesisderechoutpl@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[info] 
+[info] === Deploying to 'tesisderechoutpl'...
+[info] 
+[info] i  deploying functions 
+[debug] [2026-06-04T19:05:50.427Z] Checked if tokens are valid: true, expires at: 1780603339470
+[debug] [2026-06-04T19:05:50.427Z] Checked if tokens are valid: true, expires at: 1780603339470
+[debug] [2026-06-04T19:05:50.427Z] >>> [apiv2][query] GET https://cloudresourcemanager.googleapis.com/v1/projects/tesisderechoutpl [none]
+[debug] [2026-06-04T19:05:50.591Z] <<< [apiv2][status] GET https://cloudresourcemanager.googleapis.com/v1/projects/tesisderechoutpl 200
+[debug] [2026-06-04T19:05:50.591Z] <<< [apiv2][body] GET https://cloudresourcemanager.googleapis.com/v1/projects/tesisderechoutpl {"projectNumber":"1051057023448","projectId":"tesisderechoutpl","lifecycleState":"ACTIVE","name":"TesisDerechoUTPL","labels":{"firebase":"enabled"},"createTime":"2024-08-28T03:27:39.959584Z"}
+[info] i  functions: preparing codebase default for deployment 
+[info] i  functions: ensuring required API cloudfunctions.googleapis.com is enabled... 
+[info] i  functions: ensuring required API cloudbuild.googleapis.com is enabled... 
+[info] i  artifactregistry: ensuring required API artifactregistry.googleapis.com is enabled... 
+[debug] [2026-06-04T19:05:50.595Z] Checked if tokens are valid: true, expires at: 1780603339470
+[debug] [2026-06-04T19:05:50.595Z] Checked if tokens are valid: true, expires at: 1780603339470
+[debug] [2026-06-04T19:05:50.595Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/tesisderechoutpl/adminSdkConfig [none]
+[debug] [2026-06-04T19:05:51.223Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/tesisderechoutpl/adminSdkConfig 200
+[debug] [2026-06-04T19:05:51.223Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/tesisderechoutpl/adminSdkConfig {"projectId":"tesisderechoutpl","storageBucket":"tesisderechoutpl.appspot.com","locationId":"us-central"}
+[debug] [2026-06-04T19:05:51.224Z] Checked if tokens are valid: true, expires at: 1780603339470
+[debug] [2026-06-04T19:05:51.224Z] Checked if tokens are valid: true, expires at: 1780603339470
+[debug] [2026-06-04T19:05:51.224Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/tesisderechoutpl/configs [none]
+[debug] [2026-06-04T19:05:51.729Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/tesisderechoutpl/configs 200
+[debug] [2026-06-04T19:05:51.729Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/tesisderechoutpl/configs {}
+[debug] [2026-06-04T19:05:51.734Z] Validating nodejs source
+[warn] ⚠  functions: Runtime Node.js 20 was deprecated on 2026-04-30 and will be decommissioned on 2026-10-30, after which you will not be able to deploy without upgrading. Consider upgrading now to avoid disruption. See https://cloud.google.com/functions/docs/runtime-support for full details on the lifecycle policy 
+[warn] ⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory. 
+[warn] ⚠  functions: Please note that there will be breaking changes when you upgrade. 
+[debug] [2026-06-04T19:05:53.761Z] > [functions] package.json contents: {
+  "name": "functions",
+  "description": "Cloud Functions for Firebase",
+  "scripts": {
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log",
+    "migrate:authorized:activation:dry": "node migrations/migrate-authorized-activation-status.js --dry-run",
+    "migrate:authorized:activation": "node migrations/migrate-authorized-activation-status.js --apply"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^12.1.0",
+    "firebase-functions": "^5.0.0",
+    "jszip": "^3.10.1",
+    "nodemailer": "^7.0.12"
+  },
+  "devDependencies": {
+    "firebase-functions-test": "^3.1.0"
+  },
+  "private": true
+}
+[debug] [2026-06-04T19:05:53.761Z] Building nodejs source
+[info] i  functions: Loading and analyzing source code for codebase default to determine what to deploy 
+[debug] [2026-06-04T19:05:53.763Z] Could not find functions.yaml. Must use http discovery
+[debug] [2026-06-04T19:05:53.785Z] Found firebase-functions binary at '/Users/macbookair/Documents/TesisDerechoUtpl/functions/node_modules/.bin/firebase-functions'
+[info] Serving at port 8055
+
+[debug] [2026-06-04T19:05:55.852Z] Got response from /__/functions.yaml {"endpoints":{"sendEmail":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["us-central1"],"labels":{},"callableTrigger":{},"entryPoint":"sendEmail"},"descargarRubricaZip":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","labels":{},"httpsTrigger":{},"entryPoint":"descargarRubricaZip"}},"specVersion":"v1alpha1","requiredAPIs":[],"extensions":{}}
+[info] i  extensions: ensuring required API firebaseextensions.googleapis.com is enabled... 
+[debug] [2026-06-04T19:05:59.927Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-06-04T19:05:59.927Z] > authorizing via signed-in user (porkevin743@gmail.com)
+[debug] [2026-06-04T19:05:59.928Z] [iam] checking project tesisderechoutpl for permissions ["firebase.projects.get","firebaseextensions.instances.list"]
+[debug] [2026-06-04T19:05:59.928Z] Checked if tokens are valid: true, expires at: 1780603339470
+[debug] [2026-06-04T19:05:59.928Z] Checked if tokens are valid: true, expires at: 1780603339470
+[debug] [2026-06-04T19:05:59.928Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/tesisderechoutpl:testIamPermissions [none]
+[debug] [2026-06-04T19:05:59.928Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/tesisderechoutpl:testIamPermissions x-goog-quota-user=projects/tesisderechoutpl
+[debug] [2026-06-04T19:05:59.928Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/tesisderechoutpl:testIamPermissions {"permissions":["firebase.projects.get","firebaseextensions.instances.list"]}
+[debug] [2026-06-04T19:06:00.209Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/tesisderechoutpl:testIamPermissions 200
+[debug] [2026-06-04T19:06:00.210Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/tesisderechoutpl:testIamPermissions {"permissions":["firebase.projects.get","firebaseextensions.instances.list"]}
+[debug] [2026-06-04T19:06:00.211Z] Checked if tokens are valid: true, expires at: 1780603339470
+[debug] [2026-06-04T19:06:00.211Z] Checked if tokens are valid: true, expires at: 1780603339470
+[debug] [2026-06-04T19:06:00.212Z] >>> [apiv2][query] GET https://firebaseextensions.googleapis.com/v1beta/projects/tesisderechoutpl/instances pageSize=100&pageToken=
+[debug] [2026-06-04T19:06:01.068Z] <<< [apiv2][status] GET https://firebaseextensions.googleapis.com/v1beta/projects/tesisderechoutpl/instances 200
+[debug] [2026-06-04T19:06:01.069Z] <<< [apiv2][body] GET https://firebaseextensions.googleapis.com/v1beta/projects/tesisderechoutpl/instances {}
+[info] i  functions: preparing functions directory for uploading... 
+[info] i  functions: packaged /Users/macbookair/Documents/TesisDerechoUtpl/functions (72.7 KB) for uploading 
+[debug] [2026-06-04T19:06:01.132Z] Checked if tokens are valid: true, expires at: 1780603339470
+[debug] [2026-06-04T19:06:01.132Z] Checked if tokens are valid: true, expires at: 1780603339470
+[debug] [2026-06-04T19:06:01.132Z] >>> [apiv2][query] GET https://cloudfunctions.googleapis.com/v1/projects/tesisderechoutpl/locations/-/functions [none]
+[debug] [2026-06-04T19:06:01.982Z] <<< [apiv2][status] GET https://cloudfunctions.googleapis.com/v1/projects/tesisderechoutpl/locations/-/functions 200
+[debug] [2026-06-04T19:06:01.983Z] <<< [apiv2][body] GET https://cloudfunctions.googleapis.com/v1/projects/tesisderechoutpl/locations/-/functions {}
+[debug] [2026-06-04T19:06:01.983Z] Checked if tokens are valid: true, expires at: 1780603339470
+[debug] [2026-06-04T19:06:01.984Z] Checked if tokens are valid: true, expires at: 1780603339470
+[debug] [2026-06-04T19:06:01.984Z] >>> [apiv2][query] GET https://cloudfunctions.googleapis.com/v2/projects/tesisderechoutpl/locations/-/functions filter=environment%3D%22GEN_2%22
+[debug] [2026-06-04T19:06:02.443Z] <<< [apiv2][status] GET https://cloudfunctions.googleapis.com/v2/projects/tesisderechoutpl/locations/-/functions 200
+[debug] [2026-06-04T19:06:02.443Z] <<< [apiv2][body] GET https://cloudfunctions.googleapis.com/v2/projects/tesisderechoutpl/locations/-/functions {"functions":[{"name":"projects/tesisderechoutpl/locations/us-central1/functions/sendEmail","buildConfig":{"build":"projects/1051057023448/locations/us-central1/builds/99a37693-f47e-4970-97ef-a5203581308e","runtime":"nodejs20","entryPoint":"sendEmail","source":{"storageSource":{"bucket":"gcf-v2-sources-1051057023448-us-central1","object":"sendEmail/function-source.zip","generation":"1776651023257400"}},"environmentVariables":{"GOOGLE_NODE_RUN_SCRIPTS":""},"dockerRepository":"projects/tesisderechoutpl/locations/us-central1/repositories/gcf-artifacts","sourceProvenance":{"resolvedStorageSource":{"bucket":"gcf-v2-sources-1051057023448-us-central1","object":"sendEmail/function-source.zip","generation":"1776651023257400"}},"dockerRegistry":"ARTIFACT_REGISTRY","serviceAccount":"projects/tesisderechoutpl/serviceAccounts/1051057023448-compute@developer.gserviceaccount.com","automaticUpdatePolicy":{}},"serviceConfig":{"service":"projects/tesisderechoutpl/locations/us-central1/services/sendemail","timeoutSeconds":60,"environmentVariables":{"FIREBASE_CONFIG":"{\"projectId\":\"tesisderechoutpl\",\"storageBucket\":\"tesisderechoutpl.appspot.com\",\"locationId\":\"us-central\"}","GCLOUD_PROJECT":"tesisderechoutpl","EVENTARC_CLOUD_EVENT_SOURCE":"projects/tesisderechoutpl/locations/us-central1/services/sendEmail","FUNCTION_TARGET":"sendEmail","LOG_EXECUTION_ID":"true"},"maxInstanceCount":20,"ingressSettings":"ALLOW_ALL","uri":"https://sendemail-yku5sfgz3q-uc.a.run.app","serviceAccountEmail":"1051057023448-compute@developer.gserviceaccount.com","availableMemory":"256Mi","allTrafficOnLatestRevision":true,"revision":"sendemail-00005-put","maxInstanceRequestConcurrency":80,"availableCpu":"1"},"state":"ACTIVE","updateTime":"2026-04-20T02:11:21.639738857Z","labels":{"deployment-callable":"true","firebase-functions-hash":"ac219fa99196f205fc1814f340cbdaf7875e3b25","deployment-tool":"cli-firebase"},"environment":"GEN_2","url":"https://us-central1-tesisderechoutpl.cloudfunctions.net/sendEmail","createTime":"2026-01-02T13:25:19.722898268Z","satisfiesPzi":true}]}
+[info] i  functions: ensuring required API run.googleapis.com is enabled... 
+[info] i  functions: ensuring required API eventarc.googleapis.com is enabled... 
+[info] i  functions: ensuring required API pubsub.googleapis.com is enabled... 
+[info] i  functions: ensuring required API storage.googleapis.com is enabled... 
+[info] i  functions: generating the service identity for pubsub.googleapis.com... 
+[debug] [2026-06-04T19:06:02.456Z] Checked if tokens are valid: true, expires at: 1780603339470
+[debug] [2026-06-04T19:06:02.456Z] Checked if tokens are valid: true, expires at: 1780603339470
+[info] i  functions: generating the service identity for eventarc.googleapis.com... 
+[debug] [2026-06-04T19:06:02.456Z] Checked if tokens are valid: true, expires at: 1780603339470
+[debug] [2026-06-04T19:06:02.456Z] Checked if tokens are valid: true, expires at: 1780603339470
+[debug] [2026-06-04T19:06:02.456Z] >>> [apiv2][query] POST https://serviceusage.googleapis.com/v1beta1/projects/1051057023448/services/pubsub.googleapis.com:generateServiceIdentity [none]
+[debug] [2026-06-04T19:06:02.457Z] >>> [apiv2][(partial)header] POST https://serviceusage.googleapis.com/v1beta1/projects/1051057023448/services/pubsub.googleapis.com:generateServiceIdentity x-goog-quota-user=projects/1051057023448
+[debug] [2026-06-04T19:06:02.457Z] >>> [apiv2][body] POST https://serviceusage.googleapis.com/v1beta1/projects/1051057023448/services/pubsub.googleapis.com:generateServiceIdentity {}
+[debug] [2026-06-04T19:06:02.464Z] >>> [apiv2][query] POST https://serviceusage.googleapis.com/v1beta1/projects/1051057023448/services/eventarc.googleapis.com:generateServiceIdentity [none]
+[debug] [2026-06-04T19:06:02.464Z] >>> [apiv2][(partial)header] POST https://serviceusage.googleapis.com/v1beta1/projects/1051057023448/services/eventarc.googleapis.com:generateServiceIdentity x-goog-quota-user=projects/1051057023448
+[debug] [2026-06-04T19:06:02.464Z] >>> [apiv2][body] POST https://serviceusage.googleapis.com/v1beta1/projects/1051057023448/services/eventarc.googleapis.com:generateServiceIdentity {}
+[debug] [2026-06-04T19:06:03.264Z] <<< [apiv2][status] POST https://serviceusage.googleapis.com/v1beta1/projects/1051057023448/services/pubsub.googleapis.com:generateServiceIdentity 200
+[debug] [2026-06-04T19:06:03.264Z] <<< [apiv2][body] POST https://serviceusage.googleapis.com/v1beta1/projects/1051057023448/services/pubsub.googleapis.com:generateServiceIdentity {"name":"operations/finished.DONE_OPERATION","done":true,"response":{"@type":"type.googleapis.com/google.api.serviceusage.v1beta1.ServiceIdentity","email":"service-1051057023448@gcp-sa-pubsub.iam.gserviceaccount.com","uniqueId":"102503785530625621887"}}
+[debug] [2026-06-04T19:06:03.293Z] <<< [apiv2][status] POST https://serviceusage.googleapis.com/v1beta1/projects/1051057023448/services/eventarc.googleapis.com:generateServiceIdentity 200
+[debug] [2026-06-04T19:06:03.293Z] <<< [apiv2][body] POST https://serviceusage.googleapis.com/v1beta1/projects/1051057023448/services/eventarc.googleapis.com:generateServiceIdentity {"name":"operations/finished.DONE_OPERATION","done":true,"response":{"@type":"type.googleapis.com/google.api.serviceusage.v1beta1.ServiceIdentity","email":"service-1051057023448@gcp-sa-eventarc.iam.gserviceaccount.com","uniqueId":"100987433967847128822"}}
+[debug] [2026-06-04T19:06:03.296Z] Checked if tokens are valid: true, expires at: 1780603339470
+[debug] [2026-06-04T19:06:03.296Z] Checked if tokens are valid: true, expires at: 1780603339470
+[debug] [2026-06-04T19:06:03.296Z] >>> [apiv2][query] GET https://cloudresourcemanager.googleapis.com/v1/projects/tesisderechoutpl [none]
+[debug] [2026-06-04T19:06:03.454Z] <<< [apiv2][status] GET https://cloudresourcemanager.googleapis.com/v1/projects/tesisderechoutpl 200
+[debug] [2026-06-04T19:06:03.454Z] <<< [apiv2][body] GET https://cloudresourcemanager.googleapis.com/v1/projects/tesisderechoutpl {"projectNumber":"1051057023448","projectId":"tesisderechoutpl","lifecycleState":"ACTIVE","name":"TesisDerechoUTPL","labels":{"firebase":"enabled"},"createTime":"2024-08-28T03:27:39.959584Z"}
+[debug] [2026-06-04T19:06:03.455Z] Checked if tokens are valid: true, expires at: 1780603339470
+[debug] [2026-06-04T19:06:03.455Z] Checked if tokens are valid: true, expires at: 1780603339470
+[debug] [2026-06-04T19:06:03.455Z] >>> [apiv2][query] GET https://compute.googleapis.com/compute/v1/projects/1051057023448 [none]
+[debug] [2026-06-04T19:06:03.721Z] <<< [apiv2][status] GET https://compute.googleapis.com/compute/v1/projects/1051057023448 403
+[debug] [2026-06-04T19:06:03.722Z] <<< [apiv2][body] GET https://compute.googleapis.com/compute/v1/projects/1051057023448 {"error":{"code":403,"message":"Compute Engine API has not been used in project 1051057023448 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/compute.googleapis.com/overview?project=1051057023448 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.","errors":[{"message":"Compute Engine API has not been used in project 1051057023448 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/compute.googleapis.com/overview?project=1051057023448 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.","domain":"usageLimits","reason":"accessNotConfigured","extendedHelp":"https://console.developers.google.com"}],"status":"PERMISSION_DENIED","details":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"SERVICE_DISABLED","domain":"googleapis.com","metadata":{"service":"compute.googleapis.com","activationUrl":"https://console.developers.google.com/apis/api/compute.googleapis.com/overview?project=1051057023448","serviceTitle":"Compute Engine API","consumer":"projects/1051057023448","containerInfo":"1051057023448"}},{"@type":"type.googleapis.com/google.rpc.LocalizedMessage","locale":"en-US","message":"Compute Engine API has not been used in project 1051057023448 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/compute.googleapis.com/overview?project=1051057023448 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry."},{"@type":"type.googleapis.com/google.rpc.Help","links":[{"description":"Google developers console API activation","url":"https://console.developers.google.com/apis/api/compute.googleapis.com/overview?project=1051057023448"}]}]}}
+[debug] [2026-06-04T19:06:03.723Z] unable to look up default compute service account. Falling back to 1051057023448-compute@developer.gserviceaccount.com. Error: {"name":"FirebaseError","children":[],"context":{"body":{"error":{"code":403,"message":"Compute Engine API has not been used in project 1051057023448 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/compute.googleapis.com/overview?project=1051057023448 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.","errors":[{"message":"Compute Engine API has not been used in project 1051057023448 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/compute.googleapis.com/overview?project=1051057023448 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.","domain":"usageLimits","reason":"accessNotConfigured","extendedHelp":"https://console.developers.google.com"}],"status":"PERMISSION_DENIED","details":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"SERVICE_DISABLED","domain":"googleapis.com","metadata":{"service":"compute.googleapis.com","activationUrl":"https://console.developers.google.com/apis/api/compute.googleapis.com/overview?project=1051057023448","serviceTitle":"Compute Engine API","consumer":"projects/1051057023448","containerInfo":"1051057023448"}},{"@type":"type.googleapis.com/google.rpc.LocalizedMessage","locale":"en-US","message":"Compute Engine API has not been used in project 1051057023448 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/compute.googleapis.com/overview?project=1051057023448 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry."},{"@type":"type.googleapis.com/google.rpc.Help","links":[{"description":"Google developers console API activation","url":"https://console.developers.google.com/apis/api/compute.googleapis.com/overview?project=1051057023448"}]}]}},"response":{"statusCode":403}},"exit":1,"message":"Request to https://compute.googleapis.com/compute/v1/projects/1051057023448 had HTTP Error: 403, Compute Engine API has not been used in project 1051057023448 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/compute.googleapis.com/overview?project=1051057023448 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.","status":403}
+[debug] [2026-06-04T19:06:03.726Z] Checked if tokens are valid: true, expires at: 1780603339470
+[debug] [2026-06-04T19:06:03.726Z] Checked if tokens are valid: true, expires at: 1780603339470
+[debug] [2026-06-04T19:06:03.727Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/tesisderechoutpl/billingInfo [none]
+[debug] [2026-06-04T19:06:04.049Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/tesisderechoutpl/billingInfo 200
+[debug] [2026-06-04T19:06:04.050Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/tesisderechoutpl/billingInfo {"name":"projects/tesisderechoutpl/billingInfo","projectId":"tesisderechoutpl","billingAccountName":"billingAccounts/0173B7-939FC6-DD59AE","billingEnabled":true}
+[debug] [2026-06-04T19:06:04.052Z] [functions] found 1 new HTTP functions, testing setIamPolicy permission...
+[debug] [2026-06-04T19:06:04.052Z] Checked if tokens are valid: true, expires at: 1780603339470
+[debug] [2026-06-04T19:06:04.053Z] Checked if tokens are valid: true, expires at: 1780603339470
+[debug] [2026-06-04T19:06:04.053Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/tesisderechoutpl:testIamPermissions [none]
+[debug] [2026-06-04T19:06:04.053Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/tesisderechoutpl:testIamPermissions x-goog-quota-user=projects/tesisderechoutpl
+[debug] [2026-06-04T19:06:04.054Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/tesisderechoutpl:testIamPermissions {"permissions":["cloudfunctions.functions.setIamPolicy"]}
+[debug] [2026-06-04T19:06:04.255Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/tesisderechoutpl:testIamPermissions 200
+[debug] [2026-06-04T19:06:04.255Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/tesisderechoutpl:testIamPermissions {}
+[error] 
+[error] Error: Missing required permission on project tesisderechoutpl to deploy new HTTPS functions. The permission cloudfunctions.functions.setIamPolicy is required to deploy the following functions:
+
+- descargarRubricaZip
+
+To address this error, please ask a project Owner to assign your account the "Cloud Functions Admin" role at the following URL:
+
+https://console.cloud.google.com/iam-admin/iam?project=tesisderechoutpl

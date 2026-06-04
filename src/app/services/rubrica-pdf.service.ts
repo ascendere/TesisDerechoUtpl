@@ -4,6 +4,7 @@ import { AngularFireStorage } from '@angular/fire/compat/storage';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { lastValueFrom } from 'rxjs';
+import JSZip from 'jszip';
 
 @Injectable({
   providedIn: 'root',
@@ -294,25 +295,51 @@ export class RubricaPdfService {
    * Ejecuta la subida binaria directa a Storage y guarda la URL en Firestore
    */
   async guardarPdfEnFirebase(tesisId: string, doc: jsPDF): Promise<string> {
-    const blob = doc.output('blob');
-    const filePath = `rubricas/rubrica_${tesisId}_final.pdf`;
-    const fileRef = this.storage.ref(filePath);
+    // ===== PDF =====
+    const pdfBlob = doc.output('blob');
 
-    // Subida con metadatos nativos de lectura PDF
-    const metadata = { contentType: 'application/pdf' };
-    const uploadTask = this.storage.upload(filePath, blob, {
-      customMetadata: metadata,
+    const pdfPath = `rubricas/rubrica_${tesisId}_final.pdf`;
+    const pdfRef = this.storage.ref(pdfPath);
+
+    await this.storage.upload(pdfPath, pdfBlob, {
+      customMetadata: {
+        contentType: 'application/pdf',
+      },
     });
 
-    await uploadTask;
-    const downloadUrl = await lastValueFrom(fileRef.getDownloadURL());
+    const downloadUrlPdf = await lastValueFrom(pdfRef.getDownloadURL());
 
-    // Sincronización atómica con el registro de la Tesis
+    // ===== ZIP =====
+    const zip = new JSZip();
+
+    zip.file(`rubrica_${tesisId}_final.pdf`, pdfBlob);
+
+    const zipBlob = await zip.generateAsync({
+      type: 'blob',
+      compression: 'DEFLATE',
+      compressionOptions: {
+        level: 9,
+      },
+    });
+
+    const zipPath = `rubricas/rubrica_${tesisId}_final.zip`;
+    const zipRef = this.storage.ref(zipPath);
+
+    await this.storage.upload(zipPath, zipBlob, {
+      customMetadata: {
+        contentType: 'application/zip',
+      },
+    });
+
+    const downloadUrlZip = await lastValueFrom(zipRef.getDownloadURL());
+
+    // ===== Firestore =====
     await this.firestore.collection('tesis').doc(tesisId).update({
-      urlPdfRubrica: downloadUrl,
+      urlPdfRubrica: downloadUrlPdf,
+      urlZipRubrica: downloadUrlZip,
       fechaPdfActualizacion: new Date(),
     });
 
-    return downloadUrl;
+    return downloadUrlPdf;
   }
 }

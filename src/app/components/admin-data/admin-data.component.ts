@@ -43,7 +43,7 @@ export class AdminDataComponent implements OnInit {
   selectedEvaluator: any = null;
   directorsList: any[] = [];
   evaluatorsList: any[] = [];
-  private tesisDataCache: any = null;
+  public tesisDataCache: any = null;
 
   compareUsers = (a: any, b: any): boolean => {
     if (!a || !b) return a === b;
@@ -285,5 +285,12 @@ export class AdminDataComponent implements OnInit {
 
         this.avanceDirectorAlCien = evidenciaMasReciente.porcentaje === 100;
       });
+  }
+  descargarExpedienteZip(): void {
+    console.log(this.tesisDataCache.urlZipRubrica);
+    const a = document.createElement('a');
+    a.href = this.tesisDataCache.urlZipRubrica;
+    a.download = 'expediente_graduacion.zip';
+    a.click();
   }
 }

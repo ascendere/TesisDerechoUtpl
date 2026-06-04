@@ -434,6 +434,41 @@
   <!-- Expediente de área de graduación derecho -->
   <div class="recuadro">
     <h3>Expediente de área de graduación derecho</h3>
+
+    <p>
+      Fecha de Emisión:
+      {{
+        recuadros.expedienteGraduacion.fechaEnvio
+          ? recuadros.expedienteGraduacion.fechaEnvio
+          : currentDate
+      }}
+    </p>
+
+    <div *ngIf="!tesisDataCache?.urlZipRubrica" class="recuadro-pendiente">
+      <div class="custom-file-upload-disabled">
+        <img
+          src="assets/img/pending-icon.svg"
+          alt="Wait Icon"
+          class="icon-wait"
+        />
+        <span>No existe expediente disponible para descarga</span>
+      </div>
+    </div>
+
+    <div *ngIf="tesisDataCache?.urlZipRubrica" class="download-container">
+      <button
+        type="button"
+        (click)="descargarExpedienteZip()"
+        class="custom-file-upload download-style zip-btn-style"
+      >
+        <img src="assets/img/download-icon.svg" alt="Descargar" />
+        <span>Descargar Expediente</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- <div class="recuadro">
+    <h3>Expediente de área de graduación derecho</h3>
     <p>
       Fecha:
       {{
@@ -494,5 +529,5 @@
     </button>
   </div>
 </div>
-
+--></div>
 <app-footer2></app-footer2>

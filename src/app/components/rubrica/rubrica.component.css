@@ -87,32 +87,39 @@ input[type="number"] {
   background: #f0f0f0;
 }
 
+.back-btn,
 .download-btn {
-  background-color: #28a745; /* Verde institucional para documentos/descargas */
-  color: #ffffff;
-  border: none;
   border-radius: 6px;
   padding: 6px 12px;
   font-size: 14px;
-  font-family: Arial, sans-serif;
-  font-weight: bold;
   cursor: pointer;
-  box-sizing: border-box;
+  transition: all 0.15s ease-in-out;
+}
+
+/* Botón regresar */
+.back-btn {
+  background: transparent;
+  color: #003366;
+  border: 1px solid #003366;
+}
+
+.back-btn:hover {
+  background-color: #f0f4f8;
+}
+
+/* Botón descargar */
+.download-btn {
+  background: transparent;
+  color: #003366;
+  border: 1px solid #003366;
   display: inline-flex;
   align-items: center;
-  gap: 6px; /* Separación perfecta entre el emoji 📥 y el texto */
-  transition: background-color 0.15s ease-in-out;
+  gap: 6px;
+
+  /* separación respecto al botón volver */
+  margin-left: 12px;
 }
 
-/* Efecto al pasar el cursor por encima */
 .download-btn:hover {
-  background-color: #218838;
-}
-
-/* Estado deshabilitado cuando la rúbrica se está guardando (Evita distorsiones y clics dobles) */
-.download-btn:disabled {
-  background-color: #e0e0e0 !important;
-  color: #a0a0a0 !important;
-  cursor: not-allowed;
-  opacity: 0.8;
+  background-color: #f1fff4;
 }
